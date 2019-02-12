@@ -1,0 +1,9 @@
+README.md
+egscraper/__init__.py
+egscraper/app.py
+egscraper.egg-info/PKG-INFO
+egscraper.egg-info/SOURCES.txt
+egscraper.egg-info/dependency_links.txt
+egscraper.egg-info/not-zip-safe
+egscraper.egg-info/requires.txt
+egscraper.egg-info/top_level.txt
