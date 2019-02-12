@@ -10,3 +10,5 @@ COPY . /app
 
 RUN  pip install -r app/requirements.txt && \
      pip install /app
+
+ENTRYPOINT ["gunicorn", "--config", "/app/gunicorn_config.py", "egscraper:app"]
