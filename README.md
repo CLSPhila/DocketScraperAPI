@@ -10,9 +10,23 @@ Use the docker-compose file, dev-compose.
 
 `docker-compose -f dev-compose up`
 
-To tty connect to it:
+### To tty connect to it:
 
-`docker-compose -f dev-compose run api`
+First get the container running with
+
+`docker-compose -f dev-compose up`
+
+Then in another terminal:
+`docker-compose -f dev-compose exec api /bin/bash`
+
+### To run tests
+
+`exec` runs a command, `pytest` in the service `api`. `-w` sets the working directory of the command, `/app`.
+
+```
+docker-compose -f dev-compose up
+docker-compose -f dev-compose exec api pytest /app
+```
 
 ## Building for Production
 

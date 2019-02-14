@@ -4,7 +4,9 @@ from selenium.webdriver.firefox.options import Options
 
 options = Options()
 options.headless = True
-driver = webdriver.Firefox(options=options)
+driver = webdriver.Firefox(
+    options=options,
+    log_path="/var/log/geckodriver.log")
 
 
 app = Flask(__name__)
