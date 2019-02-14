@@ -23,7 +23,8 @@ def searchCommonPleasName():
 
 @app.route("/CP/lookupDocket", methods=["POST"])
 def lookupCommonPleasDocket():
-    return jsonify({"status": "not implemented yet"})
+    docket_number = request.json["docket_number"]
+    return jsonify(CommonPleas.lookupDocket(docket_number))
 
 
 @app.route("/MDJ/searchName", methods=["POST"])
@@ -34,6 +35,7 @@ def searchMDJName():
 @app.route("/MDJ/lookupDocket", methods=["POST"])
 def lookupMDJDocket():
     return jsonify({"status": "not implemented yet"})
+
 
 
 @app.route("/<path:path>", methods=["GET", "POST"])

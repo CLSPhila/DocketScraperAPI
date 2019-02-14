@@ -1,8 +1,13 @@
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
-from selenium.webdriver.support.ui import Select
+from selenium.webdriver.support.ui import Select, WebDriverWait
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
 import os
+import logging
+import time
 
+from .helpers import parse_docket_number
 
 """ CONSTANTS for the Common Pleas site """
 COMMON_PLEAS_URL = "https://ujsportal.pacourts.us/DocketSheets/CP.aspx"
@@ -11,11 +16,41 @@ SEARCH_TYPE_SELECT = (
     "$cphDynamicContent$searchTypeListControl")
 
 # Dropdown to indicate if docket is CP or MC
-DOCKET_NUMBER_COURT = (
+COURT_TYPE_SELECT = (
     "ctl00$ctl00$ctl00$cphMain$cphDynamicContent" +
     "$cphDynamicContent$docketNumberCriteriaControl" +
     "$docketNumberControl$mddlCourt")
 
+COUNTY_INPUT = (
+    "ctl00$ctl00$ctl00$cphMain$cphDynamicContent" +
+    "$cphDynamicContent$docketNumberCriteriaControl" +
+    "$docketNumberControl$mtxtCounty")
+
+DOCKET_TYPE_SELECT = (
+    "ctl00$ctl00$ctl00$cphMain$cphDynamicContent$cphDynamicContent" +
+    "$docketNumberCriteriaControl$docketNumberControl$mddlDocketType"
+)
+
+DOCKET_INDEX_INPUT = (
+    "ctl00$ctl00$ctl00$cphMain$cphDynamicContent$cphDynamicContent" +
+    "$docketNumberCriteriaControl$docketNumberControl$mtxtSequenceNumber"
+)
+
+YEAR_INPUT = (
+    "ctl00$ctl00$ctl00$cphMain$cphDynamicContent$cphDynamicContent" +
+    "$docketNumberCriteriaControl$docketNumberControl$mtxtYear"
+)
+
+SEARCH_BUTTON = (
+    "ctl00$ctl00$ctl00$cphMain$cphDynamicContent$cphDynamicContent" +
+    "$docketNumberCriteriaControl$searchCommandControl"
+)
+
+SEARCH_RESULTS_TABLE = (
+    "ctl00_ctl00_ctl00_cphMain_cphDynamicContent_cph" +
+    "DynamicContent_docketNumberCriteriaControl_searchResultsGrid" +
+    "Control_resultsPanel"
+)
 
 class SEARCH_TYPES:
     docket_number = "Docket Number"
@@ -26,7 +61,7 @@ class SEARCH_TYPES:
 log_path = "geckodriver.log"
 options = Options()
 options.headless = True
-options.add_argument("--window-size=800,1200")
+options.add_argument("--window-size=800,1400")
 
 
 def ss(driver, image_name="cp.png"):
@@ -41,6 +76,51 @@ def ss(driver, image_name="cp.png"):
         os.path.join(os.getcwd(), "screenshots", image_name))
 
 
+def parse_docket_search_results(search_results):
+    """ Given a table of docket search results, return a dict of key
+    information
+    """
+    docket_numbers = search_results.find_element_by_xpath(
+        "//span[contains(@id, 'docketNumberLabel')]")
+    docket_sheet_urls = search_results.find_element_by_xpath(
+        "//td/a[contains(text(), 'Docket Sheet')]")
+    summary_urls = search_results.find_element_by_xpath(
+        "//td/a[contains(text(), 'Court Summary')]")
+    captions = search_results.find_element_by_xpath(
+        "//span[contains(@id, 'shortCaptionLabel')]")
+    case_statuses = search_results.find_element_by_xpath(
+        "//span[contains(@id, 'caseStatusLabel')]"
+    )
+    otns = search_results.find_element_by_xpath(
+            "//span[contains(@id, 'otnLabel')]")
+
+    dockets = [
+        {
+            "docket_number": dn.text,
+            "docket_sheet_url": ds.text,
+            "summary_url": su.text,
+            "caption": cp.text,
+            "case_status": cs.text,
+            "otn": otn.text,
+        }
+        for dn, ds, su, cp, cs, otn in zip(
+            docket_numbers,
+            docket_sheet_urls,
+            summary_urls,
+            captions,
+            case_statuses,
+            otns,
+        )
+    ]
+
+    if len(dockets) != 1:
+        logging.warning("Found {} dockets, instead of 1.".format(len(dockets)))
+
+    logging.info(dockets)
+
+    return dockets[0]
+
+
 class CommonPleas:
 
     @staticmethod
@@ -48,15 +128,15 @@ class CommonPleas:
         """
         Search the Common Pleas site for criminal records of a person
         """
-        print("Searching for name")
-
+        logging.info("Searchng for dockets")
         driver = webdriver.Firefox(
             options=options,
             service_log_path=log_path)
         driver.get(COMMON_PLEAS_URL)
         search_type_select = Select(
             driver.find_element_by_name(SEARCH_TYPE_SELECT))
-        search_type_select.select_by_visible_text(SEARCH_TYPES.participant_name)
+        search_type_select.select_by_visible_text(
+            SEARCH_TYPES.participant_name)
 
 
         driver.quit()
@@ -66,7 +146,12 @@ class CommonPleas:
     def lookupDocket(docket_number):
         """
         Lookup information about a single docket
+
+        Args:
+            docket_number (str): Docket number like CP-45-CR-1234567-2019
         """
+        docket_dict = parse_docket_number(docket_number)
+
         driver = webdriver.Firefox(
             options=options,
             service_log_path=log_path
@@ -76,5 +161,42 @@ class CommonPleas:
             driver.find_element_by_name(SEARCH_TYPE_SELECT))
         search_type_select.select_by_visible_text(SEARCH_TYPES.docket_number)
 
-        driver.quit()
-        return {"status": "not implemented yet"}
+        # Fill in docket information
+        court_select = Select(
+            driver.find_element_by_name(COURT_TYPE_SELECT)
+        )
+        court_select.select_by_visible_text(docket_dict["court"])
+
+        county_input = driver.find_element_by_name(COUNTY_INPUT)
+        county_input.send_keys(docket_dict["county"])
+
+        docket_type_select = Select(
+            driver.find_element_by_name(DOCKET_TYPE_SELECT)
+        )
+        docket_type_select.select_by_visible_text(docket_dict["docket_type"])
+
+        docket_index_input = driver.find_element_by_name(DOCKET_INDEX_INPUT)
+        docket_index_input.send_keys(docket_dict["docket_index"])
+
+        year_input = driver.find_element_by_name(YEAR_INPUT)
+        year_input.clear()
+        year_input.send_keys(docket_dict["year"])
+
+        search_button = driver.find_element_by_name(SEARCH_BUTTON)
+        search_button.click()
+
+
+        # Wait for results
+        try:
+            search_results = WebDriverWait(driver, 15).until(
+                EC.presence_of_element_located(By.name, SEARCH_RESULTS_TABLE)
+            )
+            ss(driver)
+
+        # Collect results
+            response = parse_docket_search_results(search_results)
+        except:
+            response = {"status": "no dockets found"}
+        finally:
+            driver.quit()
+            return response
