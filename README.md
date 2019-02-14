@@ -28,6 +28,10 @@ docker-compose -f dev-compose up
 docker-compose -f dev-compose exec api pytest /app
 ```
 
+### Other development resources
+
+[https://selenium-python.readthedocs.io/getting-started.html#simple-usage](selenium-python bindings)
+
 ## Building for Production
 
 Build the container
