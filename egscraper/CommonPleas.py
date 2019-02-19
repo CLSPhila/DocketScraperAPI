@@ -200,6 +200,5 @@ class CommonPleas:
         except:
             response = {"status": "no dockets found"}
         finally:
-            pytest.set_trace()
             driver.quit()
             return response

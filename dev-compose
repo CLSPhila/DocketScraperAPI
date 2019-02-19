@@ -3,7 +3,7 @@ services:
   api:
     build:
       context: .
-      dockerfile: Dockerfile-Dev
+      dockerfile: Dockerfile
     ports:
       - "8800:8800"
     volumes:

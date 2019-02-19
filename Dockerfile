@@ -8,7 +8,11 @@ RUN apt update && apt install -y firefox-esr && \
 
 COPY . /app
 
-RUN  pip install -r app/requirements.txt && \
-     pip install /app
+WORKDIR /app
+
+RUN  pip install --upgrade pip && \
+     pip install pipenv && \
+     pipenv install --system
+
 
 ENTRYPOINT ["gunicorn", "--config", "/app/gunicorn_config.py", "egscraper:app"]
