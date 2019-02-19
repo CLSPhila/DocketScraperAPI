@@ -1,11 +1,14 @@
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.support.ui import Select, WebDriverWait
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
+from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.support import expected_conditions as EC
 import os
 import logging
 import time
+from datetime import datetime
 import pytest
 
 from .helpers import parse_docket_number
@@ -16,42 +19,84 @@ SEARCH_TYPE_SELECT = (
     "ctl00$ctl00$ctl00$cphMain$cphDynamicContent" +
     "$cphDynamicContent$searchTypeListControl")
 
-# Dropdown to indicate if docket is CP or MC
-COURT_TYPE_SELECT = (
-    "ctl00$ctl00$ctl00$cphMain$cphDynamicContent" +
-    "$cphDynamicContent$docketNumberCriteriaControl" +
-    "$docketNumberControl$mddlCourt")
 
-COUNTY_INPUT = (
-    "ctl00$ctl00$ctl00$cphMain$cphDynamicContent" +
-    "$cphDynamicContent$docketNumberCriteriaControl" +
-    "$docketNumberControl$mtxtCounty")
+class DocketSearch:
+    """Selectors for searching for a single Docket"""
+    # Dropdown to indicate if docket is CP or MC
+    COURT_TYPE_SELECT = (
+        "ctl00$ctl00$ctl00$cphMain$cphDynamicContent" +
+        "$cphDynamicContent$docketNumberCriteriaControl" +
+        "$docketNumberControl$mddlCourt")
 
-DOCKET_TYPE_SELECT = (
-    "ctl00$ctl00$ctl00$cphMain$cphDynamicContent$cphDynamicContent" +
-    "$docketNumberCriteriaControl$docketNumberControl$mddlDocketType"
-)
+    COUNTY_INPUT = (
+        "ctl00$ctl00$ctl00$cphMain$cphDynamicContent" +
+        "$cphDynamicContent$docketNumberCriteriaControl" +
+        "$docketNumberControl$mtxtCounty")
 
-DOCKET_INDEX_INPUT = (
-    "ctl00$ctl00$ctl00$cphMain$cphDynamicContent$cphDynamicContent" +
-    "$docketNumberCriteriaControl$docketNumberControl$mtxtSequenceNumber"
-)
+    # Dropdown when searching for a spsecific Docket to identify
+    # the type of docket (CR, MD, etc.)
+    DOCKET_TYPE_SELECT = (
+        "ctl00$ctl00$ctl00$cphMain$cphDynamicContent$cphDynamicContent" +
+        "$docketNumberCriteriaControl$docketNumberControl$mddlDocketType"
+    )
 
-YEAR_INPUT = (
-    "ctl00$ctl00$ctl00$cphMain$cphDynamicContent$cphDynamicContent" +
-    "$docketNumberCriteriaControl$docketNumberControl$mtxtYear"
-)
+    DOCKET_INDEX_INPUT = (
+        "ctl00$ctl00$ctl00$cphMain$cphDynamicContent$cphDynamicContent" +
+        "$docketNumberCriteriaControl$docketNumberControl$mtxtSequenceNumber"
+    )
 
-SEARCH_BUTTON = (
-    "ctl00$ctl00$ctl00$cphMain$cphDynamicContent$cphDynamicContent" +
-    "$docketNumberCriteriaControl$searchCommandControl"
-)
+    YEAR_INPUT = (
+        "ctl00$ctl00$ctl00$cphMain$cphDynamicContent$cphDynamicContent" +
+        "$docketNumberCriteriaControl$docketNumberControl$mtxtYear"
+    )
 
-SEARCH_RESULTS_TABLE = (
-    "ctl00_ctl00_ctl00_cphMain_cphDynamicContent_cph" +
-    "DynamicContent_docketNumberCriteriaControl_searchResultsGrid" +
-    "Control_resultsPanel"
-)
+    SEARCH_BUTTON = (
+        "ctl00$ctl00$ctl00$cphMain$cphDynamicContent$cphDynamicContent" +
+        "$docketNumberCriteriaControl$searchCommandControl"
+    )
+
+    SEARCH_RESULTS_TABLE = (
+        "ctl00_ctl00_ctl00_cphMain_cphDynamicContent_cph" +
+        "DynamicContent_docketNumberCriteriaControl_searchResultsGrid" +
+        "Control_resultsPanel"
+    )
+
+
+# TODO These are inconsistently Names or IDs.
+class NameSearch:
+    """Selectors for searching for a single Docket"""
+
+    LAST_NAME_INPUT = (
+        "ctl00$ctl00$ctl00$cphMain$cphDynamicContent$cphDynamicContent" +
+        "$participantCriteriaControl$lastNameControl"
+    )
+
+    FIRST_NAME_INPUT = (
+        "ctl00$ctl00$ctl00$cphMain$cphDynamicContent$cphDynamicContent" +
+        "$participantCriteriaControl$firstNameControl"
+    )
+
+    DOB_INPUT = (
+        "ctl00$ctl00$ctl00$cphMain$cphDynamicContent$cphDynamicContent" +
+        "$participantCriteriaControl$dateOfBirthControl$DateTextBox"
+    )
+
+    # Docket type when searching by a person's name.
+    DOCKET_TYPE_SELECT = (
+        "ctl00_ctl00_ctl00_cphMain_cphDynamicContent_cphDynamicContent" +
+        "_participantCriteriaControl_docketTypeListControl"
+    )
+
+    SEARCH_BUTTON = (
+        "ctl00_ctl00_ctl00_cphMain_cphDynamicContent_cphDynamicContent" +
+        "_participantCriteriaControl_searchCommandControl"
+    )
+
+    # id
+    SEARCH_RESULTS_TABLE = (
+        "ctl00_ctl00_ctl00_cphMain_cphDynamicContent_cphDynamicContent" +
+        "_participantCriteriaControl_searchResultsGridControl_resultsPanel"
+    )
 
 
 class SEARCH_TYPES:
@@ -79,7 +124,7 @@ def ss(driver, image_name="cp.png"):
 
 
 def parse_docket_search_results(search_results):
-    """ Given a table of docket search results, return a dict of key
+    """ Given a table of docket search results, return a list of dicts of key
     information
     """
     docket_numbers = search_results.find_elements_by_xpath(
@@ -117,24 +162,119 @@ def parse_docket_search_results(search_results):
     return dockets
 
 
+def next_button_enabled(driver):
+    try:
+        el = driver.find_element_by_xpath(
+            "//a[contains(@href, 'casePager') and contains(text(), 'Next')]")
+        return True if el.is_enabled() else False
+    except NoSuchElementException:
+        return False
+
+
+def get_next_button(driver):
+    return driver.find_element_by_xpath(
+        "//a[contains(@href, 'casePager') and contains(text(), 'Next')]")
+
+
 class CommonPleas:
 
     @staticmethod
-    def searchName(first, last, dob):
+    def searchName(first_name, last_name, dob=None, date_format="%m/%d/%Y"):
         """
         Search the Common Pleas site for criminal records of a person
+
+        Args:
+            first_name (str): A person's first name
+            last_name (str): A person's last name
+            dob (str): Optional. A person's data of birth, in YYYY-MM-DD
+            date_format (str): Optional. Format for parsing `dob`. Default
+                is "%Y-%m-%d"
         """
+        if dob:
+            try:
+                dob = datetime.strptime(dob, date_format)
+            except ValueError:
+                logging.error("Unable to parse date.")
+                return {"status": "Error: check your date format"}
+
         logging.info("Searchng for dockets")
         driver = webdriver.Firefox(
             options=options,
             service_log_path=log_path)
         driver.get(COMMON_PLEAS_URL)
+
+        # Choose to search by Name
         search_type_select = Select(
             driver.find_element_by_name(SEARCH_TYPE_SELECT))
         search_type_select.select_by_visible_text(
             SEARCH_TYPES.participant_name)
+
+        # Wait for the name fields to appear
+        try:
+            last_name_input = WebDriverWait(driver, 15).until(
+                EC.presence_of_element_located(
+                    (By.NAME, NameSearch.LAST_NAME_INPUT))
+            )
+        except AssertionError:
+            logging.error("Name Search Fields not found.")
+            driver.quit()
+            return {"status": "Error: Name search fields not found"}
+
+        # Fill in name fields
+        last_name_input.clear()
+        last_name_input.send_keys(last_name)
+
+        first_name_input = driver.find_element_by_name(
+            NameSearch.FIRST_NAME_INPUT)
+        first_name_input.clear()
+        first_name_input.send_keys(first_name)
+
+        first_name_input.send_keys(Keys.TAB)
+        if dob:
+
+            dob_input = driver.find_element_by_name(
+                NameSearch.DOB_INPUT
+            )
+            dob_string = dob.strftime("%m%d%Y")
+            dob_input.send_keys(dob_string)
+
+        docket_type_select = Select(
+            driver.find_element_by_id(NameSearch.DOCKET_TYPE_SELECT)
+        )
+        docket_type_select.select_by_visible_text("Criminal")
+
+        # Execute search
+        search_button = driver.find_element_by_id(NameSearch.SEARCH_BUTTON)
+        search_button.click()
+
+        # Process results.
+        try:
+            search_results = WebDriverWait(driver, 15).until(
+                EC.presence_of_element_located(
+                    (By.ID, NameSearch.SEARCH_RESULTS_TABLE))
+            )
+        except AssertionError:
+            driver.quit()
+            return {"status": "Error: Could not find search results."}
+
+        final_results = parse_docket_search_results(search_results)
+
+        while next_button_enabled(driver):
+            # click the next button to get the next page of results
+            get_next_button(driver).click()
+
+            # Get the results from this next page.
+            search_results = WebDriverWait(driver, 15).until(
+                EC.presence_of_element_located(
+                    (By.ID, NameSearch.SEARCH_RESULTS_TABLE))
+            )
+
+            final_results.extend(parse_docket_search_results(search_results))
+
         driver.quit()
-        return {"status": "not implemented yet"}
+
+        return {"status": "success",
+                "dockets": final_results}
 
     @staticmethod
     def lookupDocket(docket_number):
@@ -160,33 +300,34 @@ class CommonPleas:
 
         # Fill in docket information
         court_select = Select(
-            driver.find_element_by_name(COURT_TYPE_SELECT)
+            driver.find_element_by_name(DocketSearch.COURT_TYPE_SELECT)
         )
         court_select.select_by_visible_text(docket_dict["court"])
 
-        county_input = driver.find_element_by_name(COUNTY_INPUT)
+        county_input = driver.find_element_by_name(DocketSearch.COUNTY_INPUT)
         county_input.send_keys(docket_dict["county"])
 
         docket_type_select = Select(
-            driver.find_element_by_name(DOCKET_TYPE_SELECT)
+            driver.find_element_by_name(DocketSearch.DOCKET_TYPE_SELECT)
         )
         docket_type_select.select_by_visible_text(docket_dict["docket_type"])
 
-        docket_index_input = driver.find_element_by_name(DOCKET_INDEX_INPUT)
+        docket_index_input = driver.find_element_by_name(
+            DocketSearch.DOCKET_INDEX_INPUT)
         docket_index_input.send_keys(docket_dict["docket_index"])
 
-        year_input = driver.find_element_by_name(YEAR_INPUT)
+        year_input = driver.find_element_by_name(DocketSearch.YEAR_INPUT)
         year_input.clear()
         year_input.send_keys(docket_dict["year"])
 
-        search_button = driver.find_element_by_name(SEARCH_BUTTON)
+        search_button = driver.find_element_by_name(DocketSearch.SEARCH_BUTTON)
         search_button.click()
-
 
         # Wait for results
         try:
             search_results = WebDriverWait(driver, 15).until(
-                EC.presence_of_element_located((By.ID, SEARCH_RESULTS_TABLE))
+                EC.presence_of_element_located(
+                    (By.ID, DocketSearch.SEARCH_RESULTS_TABLE))
             )
         # Collect results
             response = parse_docket_search_results(search_results)
@@ -197,8 +338,9 @@ class CommonPleas:
                 logging.warning(
                     "I found {} dockets, instead of 1.".format(len(response)))
             response = response[0]
-        except:
+        except AssertionError:
             response = {"status": "no dockets found"}
         finally:
             driver.quit()
-            return response
+            return {"status": "success",
+                    "docket": response}

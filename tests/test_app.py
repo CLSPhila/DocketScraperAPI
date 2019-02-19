@@ -1,6 +1,6 @@
 from test_config import client
 import json
-
+import pytest
 
 def test_app_index(client):
     resp = client.get("/")
@@ -25,8 +25,10 @@ def test_common_pleas_name_search(client):
             "dob": dob,
         })
     assert resp.get_json() == {
+        "status": "success",
         "dockets": [
             {"docket_number": "CP-46-CR-0008423-2015",
+             "caption": 'Comm. v. Kane, Kathleen Granahan',
              "case_status": "Closed",
              "otn": "T7090322",
              "docket_sheet_url":
@@ -38,6 +40,7 @@ def test_common_pleas_name_search(client):
                  "CourtSummaryReport.ashx?docketNumber=CP-46-CR-0008423-2015" +
                  "&dnh=ZvuxhBGDxBDVzE1TXOV00Q%3d%3d")},
             {"docket_number": "CP-46-CR-0006239-2015",
+             "caption": 'Comm. v. Kane, Kathleen Granahan',
              "case_status": "Closed",
              "otn": "T6863802",
              "docket_sheet_url":
@@ -58,16 +61,19 @@ def test_common_pleas_docket_number(client):
         "docket_number": "CP-46-CR-0006239-2015"
     })
     assert resp.get_json() == {
-        "docket_number": "CP-46-CR-0006239-2015",
-        "docket_sheet_url":
-            ("https://ujsportal.pacourts.us/DocketSheets/" +
-             "CPReport.ashx?docketNumber=CP-46-CR-0006239-2015" +
-             "&dnh=ljFLOabFyPEOG9nfpg%2bOTA%3d%3d"),
-        "summary_url":
-            ("https://ujsportal.pacourts.us/DocketSheets/" +
-             "CourtSummaryReport.ashx?docketNumber=CP-46-CR-0006239-2015" +
-             "&dnh=ljFLOabFyPEOG9nfpg%2bOTA%3d%3d"),
-        "caption": "Comm. v. Kane, Kathleen Granahan",
-        "case_status": "Closed",
-        "otn": "T6863802",
+        "status": "success",
+        "docket": {
+            "docket_number": "CP-46-CR-0006239-2015",
+            "docket_sheet_url":
+                ("https://ujsportal.pacourts.us/DocketSheets/" +
+                 "CPReport.ashx?docketNumber=CP-46-CR-0006239-2015" +
+                 "&dnh=ljFLOabFyPEOG9nfpg%2bOTA%3d%3d"),
+            "summary_url":
+                ("https://ujsportal.pacourts.us/DocketSheets/" +
+                 "CourtSummaryReport.ashx?docketNumber=CP-46-CR-0006239-2015" +
+                 "&dnh=ljFLOabFyPEOG9nfpg%2bOTA%3d%3d"),
+            "caption": "Comm. v. Kane, Kathleen Granahan",
+            "case_status": "Closed",
+            "otn": "T6863802",
+        }
     }
