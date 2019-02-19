@@ -6,6 +6,7 @@ from selenium.webdriver.support import expected_conditions as EC
 import os
 import logging
 import time
+import pytest
 
 from .helpers import parse_docket_number
 
@@ -52,13 +53,14 @@ SEARCH_RESULTS_TABLE = (
     "Control_resultsPanel"
 )
 
+
 class SEARCH_TYPES:
     docket_number = "Docket Number"
     participant_name = "Participant Name"
 
 
 """ Defaults for the webdriver """
-log_path = "geckodriver.log"
+log_path = os.path.join(os.getcwd(), "logs", "geckodriver.log")
 options = Options()
 options.headless = True
 options.add_argument("--window-size=800,1400")
@@ -80,25 +82,25 @@ def parse_docket_search_results(search_results):
     """ Given a table of docket search results, return a dict of key
     information
     """
-    docket_numbers = search_results.find_element_by_xpath(
+    docket_numbers = search_results.find_elements_by_xpath(
         "//span[contains(@id, 'docketNumberLabel')]")
-    docket_sheet_urls = search_results.find_element_by_xpath(
+    docket_sheet_urls = search_results.find_elements_by_xpath(
         "//td/a[contains(text(), 'Docket Sheet')]")
-    summary_urls = search_results.find_element_by_xpath(
+    summary_urls = search_results.find_elements_by_xpath(
         "//td/a[contains(text(), 'Court Summary')]")
-    captions = search_results.find_element_by_xpath(
+    captions = search_results.find_elements_by_xpath(
         "//span[contains(@id, 'shortCaptionLabel')]")
-    case_statuses = search_results.find_element_by_xpath(
-        "//span[contains(@id, 'caseStatusLabel')]"
+    case_statuses = search_results.find_elements_by_xpath(
+        "//span[contains(@id, 'caseStatusNameLabel')]"
     )
-    otns = search_results.find_element_by_xpath(
+    otns = search_results.find_elements_by_xpath(
             "//span[contains(@id, 'otnLabel')]")
 
     dockets = [
         {
             "docket_number": dn.text,
-            "docket_sheet_url": ds.text,
-            "summary_url": su.text,
+            "docket_sheet_url": ds.get_attribute("href"),
+            "summary_url": su.get_attribute("href"),
             "caption": cp.text,
             "case_status": cs.text,
             "otn": otn.text,
@@ -112,13 +114,7 @@ def parse_docket_search_results(search_results):
             otns,
         )
     ]
-
-    if len(dockets) != 1:
-        logging.warning("Found {} dockets, instead of 1.".format(len(dockets)))
-
-    logging.info(dockets)
-
-    return dockets[0]
+    return dockets
 
 
 class CommonPleas:
@@ -137,8 +133,6 @@ class CommonPleas:
             driver.find_element_by_name(SEARCH_TYPE_SELECT))
         search_type_select.select_by_visible_text(
             SEARCH_TYPES.participant_name)
-
-
         driver.quit()
         return {"status": "not implemented yet"}
 
@@ -146,6 +140,9 @@ class CommonPleas:
     def lookupDocket(docket_number):
         """
         Lookup information about a single docket
+
+        If the search somehow returns more than one docket given the
+        docket_number, the search will return just the first docket.
 
         Args:
             docket_number (str): Docket number like CP-45-CR-1234567-2019
@@ -189,14 +186,20 @@ class CommonPleas:
         # Wait for results
         try:
             search_results = WebDriverWait(driver, 15).until(
-                EC.presence_of_element_located(By.name, SEARCH_RESULTS_TABLE)
+                EC.presence_of_element_located((By.ID, SEARCH_RESULTS_TABLE))
             )
-            ss(driver)
-
         # Collect results
             response = parse_docket_search_results(search_results)
+            if len(response) != 1:
+                logging.warning(
+                    "While searching for {}, ".format(docket_number)
+                )
+                logging.warning(
+                    "I found {} dockets, instead of 1.".format(len(response)))
+            response = response[0]
         except:
             response = {"status": "no dockets found"}
         finally:
+            pytest.set_trace()
             driver.quit()
             return response
