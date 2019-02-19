@@ -39,6 +39,18 @@ def test_common_pleas_name_search(client):
                 ("https://ujsportal.pacourts.us/DocketSheets/" +
                  "CourtSummaryReport.ashx?docketNumber=CP-46-CR-0008423-2015" +
                  "&dnh=ZvuxhBGDxBDVzE1TXOV00Q%3d%3d")},
+            {"docket_number": "CP-46-MD-0002457-2015",
+             "caption": "Comm v Kane, Kathleen Granahan",
+             "case_status": "Closed",
+             "otn": "T7090322",
+             "docket_sheet_url":
+                ("https://ujsportal.pacourts.us/DocketSheets/" +
+                 "CPReport.ashx?docketNumber=CP-46-MD-0002457-2015&" +
+                 "dnh=IKyQqgkSTZdotOIfTavQwQ%3d%3d"),
+             "summary_url":
+                ("https://ujsportal.pacourts.us/DocketSheets/" +
+                 "CourtSummaryReport.ashx?docketNumber=CP-46-MD-" +
+                 "0002457-2015&dnh=IKyQqgkSTZdotOIfTavQwQ%3d%3d")},
             {"docket_number": "CP-46-CR-0006239-2015",
              "caption": 'Comm. v. Kane, Kathleen Granahan',
              "case_status": "Closed",

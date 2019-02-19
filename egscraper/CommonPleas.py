@@ -4,6 +4,7 @@ from selenium.webdriver.support.ui import Select, WebDriverWait
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support import expected_conditions as EC
 import os
 import logging
@@ -98,6 +99,36 @@ class NameSearch:
         "_participantCriteriaControl_searchResultsGridControl_resultsPanel"
     )
 
+    # name
+    CASE_STATUS_SELECT = (
+        "ctl00$ctl00$ctl00$cphMain$cphDynamicContent$cphDynamicContent" +
+        "$participantCriteriaControl$caseStatusListControl"
+    )
+
+    # name
+    # This one is only used in order to TAB into the Date Filed To input box.
+    # The tabbing is necessary to trigger the javascript on that box.
+    CALENDAR_TOGGLE_BEFORE_DATE_FILED_TO_INPUT = (
+        "ctl00$ctl00$ctl00$cphMain$cphDynamicContent$cphDynamicContent" +
+        "$participantCriteriaControl$dateFiledControl$beginDateChildControl" +
+        "$ToggleImage"
+    )
+
+    # name
+    DATE_FILED_FROM_INPUT = (
+        "ctl00$ctl00$ctl00$cphMain$cphDynamicContent$cphDynamicContent" +
+        "$participantCriteriaControl$dateFiledControl$" +
+        "beginDateChildControl$DateTextBox"
+    )
+
+    # value that will be entered into the FROM date.
+    DATE_FILED_FROM = "01011950"
+
+    # name
+    DATE_FILED_TO_INPUT = (
+        "ctl00$ctl00$ctl00$cphMain$cphDynamicContent$cphDynamicContent" +
+        "$participantCriteriaControl$dateFiledControl$endDateChildControl" +
+        "$DateTextBox")
 
 class SEARCH_TYPES:
     docket_number = "Docket Number"
@@ -237,11 +268,23 @@ class CommonPleas:
             )
             dob_string = dob.strftime("%m%d%Y")
             dob_input.send_keys(dob_string)
+            dob_input.send_keys(Keys.TAB)
 
-        docket_type_select = Select(
-            driver.find_element_by_id(NameSearch.DOCKET_TYPE_SELECT)
-        )
-        docket_type_select.select_by_visible_text("Criminal")
+        driver.find_element_by_name(
+            NameSearch.CASE_STATUS_SELECT).send_keys(Keys.TAB)
+
+        date_filed_from_input = driver.find_element_by_name(
+            NameSearch.DATE_FILED_FROM_INPUT)
+        date_filed_from_input.send_keys(NameSearch.DATE_FILED_FROM)
+        date_filed_from_input.send_keys(Keys.TAB)
+
+        driver.find_element_by_name(
+            NameSearch.CALENDAR_TOGGLE_BEFORE_DATE_FILED_TO_INPUT).send_keys(
+                Keys.TAB)
+
+        date_filed_to_input = driver.find_element_by_name(
+            NameSearch.DATE_FILED_TO_INPUT)
+        date_filed_to_input.send_keys(datetime.today().strftime("%m%d%Y"))
 
         # Execute search
         search_button = driver.find_element_by_id(NameSearch.SEARCH_BUTTON)
