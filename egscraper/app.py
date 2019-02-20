@@ -11,7 +11,7 @@ def index():
     return jsonify({"status": "all good"})
 
 
-@app.route("/searchName/<str:court>", methods=["POST"])
+@app.route("/searchName/<court>", methods=["POST"])
 def searchName(court):
     first_name = request.json["first_name"]
     last_name = request.json["last_name"]
@@ -25,7 +25,7 @@ def searchName(court):
             {"status": "Error: {} court not recognized".format(court)})
 
 
-@app.route("/lookupDocket/<str:court>", methods=["POST"])
+@app.route("/lookupDocket/<court>", methods=["POST"])
 def lookupDocket(court):
     docket_number = request.json["docket_number"]
     if court == "CP":

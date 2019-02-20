@@ -11,12 +11,9 @@ import logging
 import time
 from datetime import datetime
 import pytest
-import sys
+import re
 
-
-from .helpers import parse_docket_number
-
-""" CONSTANTS for the Common Pleas site """
+## CONSTANTS for the Common Pleas site ##
 COMMON_PLEAS_URL = "https://ujsportal.pacourts.us/DocketSheets/CP.aspx"
 SEARCH_TYPE_SELECT = (
     "ctl00$ctl00$ctl00$cphMain$cphDynamicContent" +
@@ -138,11 +135,32 @@ class SEARCH_TYPES:
     participant_name = "Participant Name"
 
 
-""" Defaults for the webdriver """
+## Defaults for the webdriver ##
 log_path = os.path.join(os.getcwd(), "logs", "geckodriver.log")  # TODO Remove
 options = Options()
 options.headless = True
 options.add_argument("--window-size=800,1400")
+
+
+## Helper functions ##
+
+
+def parse_docket_number(docket_number):
+    """ Parse a Common Pleas docket number into its components.
+
+    A docket number has the form "CP-46-CR-1234567-2019"
+    This method takes a docket number as a string and
+    returns a dictionary with the different parts as keys
+    """
+    patt = re.compile(
+        "(?P<court>[A-Z]{2})-(?P<county>[0-9]{2})-" +
+        "(?P<docket_type>[A-Z]{2})-(?P<docket_index>[0-9]{7})-" +
+        "(?P<year>[0-9]{4})")
+    match = patt.match(docket_number)
+    if match is None:
+        return None
+    else:
+        return match.groupdict()
 
 
 def ss(driver, image_name="cp.png"):
