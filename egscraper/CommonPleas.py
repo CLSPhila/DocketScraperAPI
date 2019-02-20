@@ -11,6 +11,8 @@ import logging
 import time
 from datetime import datetime
 import pytest
+import sys
+
 
 from .helpers import parse_docket_number
 
@@ -130,13 +132,14 @@ class NameSearch:
         "$participantCriteriaControl$dateFiledControl$endDateChildControl" +
         "$DateTextBox")
 
+
 class SEARCH_TYPES:
     docket_number = "Docket Number"
     participant_name = "Participant Name"
 
 
 """ Defaults for the webdriver """
-log_path = os.path.join(os.getcwd(), "logs", "geckodriver.log")
+log_path = os.path.join(os.getcwd(), "logs", "geckodriver.log")  # TODO Remove
 options = Options()
 options.headless = True
 options.add_argument("--window-size=800,1400")
@@ -231,7 +234,7 @@ class CommonPleas:
         logging.info("Searchng for dockets")
         driver = webdriver.Firefox(
             options=options,
-            service_log_path=log_path)
+            service_log_path=None)
         driver.get(COMMON_PLEAS_URL)
 
         # Choose to search by Name
@@ -334,7 +337,7 @@ class CommonPleas:
 
         driver = webdriver.Firefox(
             options=options,
-            service_log_path=log_path
+            service_log_path=None
         )
         driver.get(COMMON_PLEAS_URL)
         search_type_select = Select(
