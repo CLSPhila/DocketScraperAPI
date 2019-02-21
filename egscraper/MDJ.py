@@ -79,6 +79,47 @@ class DocketSearch:
     )
 
 
+class NameSearch:
+    """ Constants for searching MDJ dockets by name """
+
+    # name
+    LAST_NAME_INPUT = (
+        "ctl00$ctl00$ctl00$cphMain$cphDynamicContent$cphSearchControls" +
+        "$udsParticipantName$txtLastName"
+    )
+
+    # name
+    FIRST_NAME_INPUT = (
+        "ctl00$ctl00$ctl00$cphMain$cphDynamicContent$cphSearchControls" +
+        "$udsParticipantName$txtFirstName"
+    )
+
+    # name
+    DOB_INPUT = (
+        "ctl00$ctl00$ctl00$cphMain$cphDynamicContent$cphSearchControls$" +
+        "udsParticipantName$dpDOB$DateTextBox"
+    )
+
+    # name
+    DATE_FILED_FROM_INPUT = (
+        "ctl00$ctl00$ctl00$cphMain$cphDynamicContent$cphSearchControls" +
+        "$udsParticipantName$DateFiledDateRangePicker$beginDateChildControl" +
+        "$DateTextBox"
+    )
+
+    # name
+    DATE_FILED_TO_INPUT = (
+        "ctl00$ctl00$ctl00$cphMain$cphDynamicContent$cphSearchControls" +
+        "$udsParticipantName$DateFiledDateRangePicker$endDateChildControl" +
+        "$DateTextBox"
+    )
+
+    # name
+    SEARCH_BUTTON = (
+        "ctl00$ctl00$ctl00$cphMain$cphDynamicContent$btnSearch"
+    )
+
+    
 # Defaults for the webdriver #
 options = Options()
 options.headless = True

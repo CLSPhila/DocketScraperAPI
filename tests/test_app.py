@@ -118,4 +118,41 @@ def test_mdj_docket_number(client):
 
 
 def test_mdj_name_search(client):
-    pass
+    resp = client.post("searchName/MDJ", json={
+        "first_name": "Kathleen",
+        "last_name": "Kane",
+        "dob": "06/14/1966"
+    })
+    assert resp.get_json() == {
+        "status": "success",
+        "dockets": [
+            {"docket_number": "MJ-38120-CR-0000381-2015",
+             "docket_sheet_url": (
+                "https://ujsportal.pacourts.us/DocketSheets/MDJReport.ashx?" +
+                "docketNumber=MJ-38120-CR-0000381-2015&dnh=" +
+                "lqucsZnMZntaILVZJ1%2bAzQ%3d%3d"
+             ),
+             "summary_url": (
+                "https://ujsportal.pacourts.us/DocketSheets/MDJCourtSummary" +
+                "Report.ashx?docketNumber=MJ-38120-CR-0000381-2015&dnh" +
+                "=lqucsZnMZntaILVZJ1%2bAzQ%3d%3d"
+             ),
+             "caption": "Comm. v. Kane, Kathleen Granahan",
+             "case_status": "Closed",
+             "otn": "T7090322"},
+            {"docket_number": "MJ-38120-CR-0000298-2015",
+             "docket_sheet_url": (
+                "https://ujsportal.pacourts.us/DocketSheets/MDJReport.ashx" +
+                "?docketNumber=MJ-38120-CR-0000298-2015&dnh=" +
+                "JV4rRtUJeBRPJy2OhRpkMA%3d%3d"
+             ),
+             "summary_url": (
+                "https://ujsportal.pacourts.us/DocketSheets/" +
+                "MDJCourtSummaryReport.ashx?docketNumber=" +
+                "MJ-38120-CR-0000298-2015&dnh=JV4rRtUJeBRPJy2OhRpkMA%3d%3d"
+             ),
+             "caption": "Comm. v. Kane, Kathleen Granahan",
+             "case_status": "Closed",
+             "otn": "T6863802"},
+        ]
+    }
