@@ -73,6 +73,10 @@ class DocketSearch:
         "ctl00$ctl00$ctl00$cphMain$cphDynamicContent$btnSearch"
     )
 
+    # id
+    SEARCH_RESULTS_TABLE = (
+        "ctl00_ctl00_ctl00_cphMain_cphDynamicContent_cphResults_gvDocket"
+    )
 
 # Defaults for the webdriver #
 options = Options()
@@ -143,6 +147,45 @@ def lookup_county(county_code, office_code):
     return matches[0]
 
 
+def parse_docket_search_results(search_results):
+    """ Given a table of docket search results, return a list of dicts of key
+    information
+    """
+    docket_numbers = search_results.find_elements_by_xpath(
+        ".//td[2]")
+    docket_sheet_urls = search_results.find_elements_by_xpath(
+        "//td/a[contains(text(), 'Docket Sheet')]")
+    summary_urls = search_results.find_elements_by_xpath(
+        "//td/a[contains(text(), 'Court Summary')]")
+    captions = search_results.find_elements_by_xpath(
+        ".//td[4]")
+    case_statuses = search_results.find_elements_by_xpath(
+        ".//td[7]"
+    )
+    otns = search_results.find_elements_by_xpath(
+            ".//td[9]")
+
+    dockets = [
+        {
+            "docket_number": dn.text,
+            "docket_sheet_url": ds.get_attribute("href"),
+            "summary_url": su.get_attribute("href"),
+            "caption": cp.text,
+            "case_status": cs.text,
+            "otn": otn.text,
+        }
+        for dn, ds, su, cp, cs, otn in zip(
+            docket_numbers,
+            docket_sheet_urls,
+            summary_urls,
+            captions,
+            case_statuses,
+            otns,
+        )
+    ]
+    return dockets
+
+
 class MDJ:
     """ Class for searching for dockets in Majesterial District courts
     """
@@ -198,6 +241,42 @@ class MDJ:
             docket_dict["county_code"], docket_dict["office_code"]
         ))
 
-        pytest.set_trace()
+        docket_type_select = Select(
+            driver.find_element_by_name(DocketSearch.DOCKET_TYPE_SELECT)
+        )
+        docket_type_select.select_by_visible_text(docket_dict["docket_type"])
 
-        return {"status": "Error: Not implemented yet"}
+        docket_index = driver.find_element_by_name(
+            DocketSearch.DOCKET_INDEX_INPUT)
+        docket_index.send_keys(docket_dict["docket_index"])
+
+        docket_year = driver.find_element_by_name(DocketSearch.YEAR_INPUT)
+
+        driver.execute_script("""
+            arguments[0].focus();
+            arguments[0].value = arguments[1];
+            arguments[0].blur();
+        """, docket_year, docket_dict["year"])
+
+        search_button = driver.find_element_by_name(DocketSearch.SEARCH_BUTTON)
+        search_button.click()
+
+        # Process results.
+        try:
+            search_results = WebDriverWait(driver, 15).until(
+                EC.presence_of_element_located(
+                    (By.ID, DocketSearch.SEARCH_RESULTS_TABLE))
+            )
+        except AssertionError:
+            driver.quit()
+            return {"status": "Error: Could not find search results."}
+
+        try:
+            final_results = parse_docket_search_results(search_results)
+            assert len(final_results) == 1
+        except AssertionError:
+            driver.quit()
+            return {"status": "Error: could not parse search results."}
+
+        driver.quit()
+        return {"status": "success", "docket": final_results[0]}
