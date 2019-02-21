@@ -12,26 +12,68 @@ from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support import expected_conditions as EC
 import os
+import csv
 import logging
 import time
 from datetime import datetime
 import pytest
 import re
 
-## Constants for MDJ Searches ##
+
+# Constants for MDJ Searches #
 MDJ_URL = "https://ujsportal.pacourts.us/DocketSheets/MDJ.aspx"
 
 # name
-SEARCH_TYPE_SELECT = 
+SEARCH_TYPE_SELECT = (
+    "ctl00$ctl00$ctl00$cphMain$cphDynamicContent" +
+    "$ddlSearchType")
 
 
-## Defaults for the webdriver ##
+class DocketSearch:
+    """Constants for searching for a single  docket."""
+    # name
+    COUNTY_SELECT = (
+        "ctl00$ctl00$ctl00$cphMain$cphDynamicContent$cphSearchControls$" +
+        "udsDocketNumber$ddlCounty"
+    )
+
+    # name
+    COURT_OFFICE_SELECT = (
+        "ctl00$ctl00$ctl00$cphMain$cphDynamicContent$cphSearchControls$" +
+        "udsDocketNumber$ddlCourtOffice"
+    )
+
+    # name
+    DOCKET_TYPE_SELECT = (
+        "ctl00$ctl00$ctl00$cphMain$cphDynamicContent$cphSearchControls" +
+        "$udsDocketNumber$ddlDocketType"
+    )
+
+    # name
+    DOCKET_INDEX_INPUT = (
+        "ctl00$ctl00$ctl00$cphMain$cphDynamicContent$cphSearchControls" +
+        "$udsDocketNumber$txtSequenceNumber"
+    )
+
+    # name
+    YEAR_INPUT = (
+        "ctl00$ctl00$ctl00$cphMain$cphDynamicContent$cphSearchControls" +
+        "$udsDocketNumber$txtYear"
+    )
+
+    # name
+    SEARCH_BUTTON = (
+        "ctl00$ctl00$ctl00$cphMain$cphDynamicContent$btnSearch"
+    )
+
+
+# Defaults for the webdriver #
 options = Options()
 options.headless = True
 options.add_argument("--window-size=800,1400")
 
 
-## Helper functions ##
+# Helper functions #
 
 def parse_docket_number(docket_str):
     """ Parse a string representation of a MDJ docket number into
@@ -53,12 +95,44 @@ def parse_docket_number(docket_str):
     else:
         return match.groupdict()
 
-def lookup_county(county_num):
+
+def lookup_county(county_code, office_code):
     """ Maps county numbers from a docket number (41, 20, etc.) to county
     names.
 
+
+    The MDJ Docket search requires a user to select the name of the county
+    to search. We can get the name of the county from a Docket Number, but it
+    is not straightforward.
+
+    MDJ Docket numbers start with "MDJ-012345". The five digits are a
+    county code and an office code. Some counties share the same code, so the
+    name of a county depends on all five of these digits.
+
+    This method uses a reference table to match the county and office codes to the correct county's name.
+
+    Args:
+        county_code (str): Two-digit code that (usually) identifies a county.
+        office_code (str): Three more digits that are sometimes necessary to identify a county, when two counties share the same county code.
+
+    Returns:
+        The name of a county, or None, if no match was found. Raise an
+        AssertionError if multiple matches were found, because then something
+        is wrong with the reference table.
+
     """
-    pass
+    full_five_digits = "{}{}".format(county_code, office_code)
+    with open("references/county_lookup.csv", "r") as f:
+        reader = csv.DictReader(f)
+        matches = []
+        for row in reader:
+            if re.match(row["regex"], full_five_digits):
+                matches.append(row["County"])
+    assert len(matches) <= 1, "Error: Found multiple matches for {}".format(
+        full_five_digits)
+    if len(matches) == 0:
+        return None
+    return matches[0]
 
 
 class MDJ:

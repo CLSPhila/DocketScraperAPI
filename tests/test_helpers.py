@@ -1,5 +1,8 @@
 from egscraper.CommonPleas import parse_docket_number as parse_cp_docket_number
-from egscraper.MDJ import parse_docket_number as parse_mdj_docket_number
+from egscraper.MDJ import (
+    parse_docket_number as parse_mdj_docket_number,
+    lookup_county)
+import pytest
 
 
 def test_parse_cp_docket_number():
@@ -25,3 +28,17 @@ def test_parse_mdj_docket_number():
         "docket_index": "0000010",
         "year": "2010"
     }
+
+
+@pytest.mark.parametrize(
+    ("county_code", "office_code", "county_name"),
+    [("05", "210", "Allegheny"),
+     ("28", "303", "Venango"),
+     ("41", "305", "Perry"),
+     ("41", "301", "Juniata"),
+     ("44", "302", "Wyoming"),
+     ("44", "303", "Sullivan"),
+     ("37", "201", "Warren"),
+     ("37", "403", "Forest")])
+def test_lookup_county(county_code, office_code, county_name):
+    assert lookup_county(county_code, office_code) == county_name
