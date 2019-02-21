@@ -28,6 +28,13 @@ SEARCH_TYPE_SELECT = (
     "ctl00$ctl00$ctl00$cphMain$cphDynamicContent" +
     "$ddlSearchType")
 
+class SearchTypes:
+    """Different types of searches on the MDJ site"""
+    # visible text of select
+    DOCKET_NUMBER = "Docket Number"
+
+    # visible text of select
+    PARTICIPANT_NAME = "Participant Name"
 
 class DocketSearch:
     """Constants for searching for a single  docket."""
@@ -69,7 +76,7 @@ class DocketSearch:
 
 # Defaults for the webdriver #
 options = Options()
-options.headless = True
+#options.headless = True
 options.add_argument("--window-size=800,1400")
 
 
@@ -86,7 +93,8 @@ def parse_docket_number(docket_str):
         Dict of parts of an MDJ Docket number
     """
     patt = re.compile(
-        "(?P<court>[A-Z]{2})-(?P<county>[0-9]{2})(?P<court_office>[0-9]{3})-" +
+        "(?P<court>[A-Z]{2})-(?P<county_code>[0-9]{2})" +
+        "(?P<office_code>[0-9]{3})-" +
         "(?P<docket_type>[A-Z]{2})-(?P<docket_index>[0-9]{7})-" +
         "(?P<year>[0-9]{4})")
     match = patt.match(docket_str)
@@ -173,4 +181,23 @@ class MDJ:
         driver.get(MDJ_URL)
         search_type_select = Select(
             driver.find_element_by_name(SEARCH_TYPE_SELECT))
-        search_type_select.select_by_visible_text(SEARCH_TYPES.docket_number)
+        search_type_select.select_by_visible_text(SearchTypes.DOCKET_NUMBER)
+
+        county_name = lookup_county(
+            docket_dict["county_code"], docket_dict["office_code"])
+
+        county_select = Select(
+            driver.find_element_by_name(DocketSearch.COUNTY_SELECT)
+        )
+        county_select.select_by_visible_text(county_name)
+
+        office_select = Select(
+            driver.find_element_by_name(DocketSearch.COURT_OFFICE_SELECT)
+        )
+        office_select.select_by_value("{}{}".format(
+            docket_dict["county_code"], docket_dict["office_code"]
+        ))
+
+        pytest.set_trace()
+
+        return {"status": "Error: Not implemented yet"}

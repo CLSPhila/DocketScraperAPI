@@ -22,8 +22,8 @@ def test_parse_bad_cp_docket_number():
 def test_parse_mdj_docket_number():
     assert parse_mdj_docket_number("MJ-12000-CR-0000010-2010") == {
         "court": "MJ",
-        "county": "12",
-        "court_office": "000",
+        "county_code": "12",
+        "office_code": "000",
         "docket_type": "CR",
         "docket_index": "0000010",
         "year": "2010"
