@@ -78,9 +78,10 @@ class DocketSearch:
         "ctl00_ctl00_ctl00_cphMain_cphDynamicContent_cphResults_gvDocket"
     )
 
+
 # Defaults for the webdriver #
 options = Options()
-#options.headless = True
+options.headless = True
 options.add_argument("--window-size=800,1400")
 
 
@@ -121,11 +122,13 @@ def lookup_county(county_code, office_code):
     county code and an office code. Some counties share the same code, so the
     name of a county depends on all five of these digits.
 
-    This method uses a reference table to match the county and office codes to the correct county's name.
+    This method uses a reference table to match the county and office codes
+    to the correct county's name.
 
     Args:
         county_code (str): Two-digit code that (usually) identifies a county.
-        office_code (str): Three more digits that are sometimes necessary to identify a county, when two counties share the same county code.
+        office_code (str): Three more digits that are sometimes necessary to
+        identify a county, when two counties share the same county code.
 
     Returns:
         The name of a county, or None, if no match was found. Raise an
