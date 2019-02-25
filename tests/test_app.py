@@ -173,3 +173,11 @@ def test_mdj_name_search(client):
              "otn": "T6863802"},
         ]
     }
+
+
+def test_mdj_multiple_pages(client):
+    resp = client.post("searchName/MDJ", json={
+        "first_name": "Kathleen",
+        "last_name": "Kane",
+    })
+    assert len(resp.get_json()["dockets"]) == 40

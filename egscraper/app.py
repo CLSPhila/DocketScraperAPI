@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request
 
 from .CommonPleas import CommonPleas
 from .MDJ import MDJ
+import logging
 
 app = Flask(__name__)
 
@@ -13,6 +14,7 @@ def index():
 
 @app.route("/searchName/<court>", methods=["POST"])
 def searchName(court):
+    logging.info(request.json)
     try:
         first_name = request.json["first_name"]
         last_name = request.json["last_name"]
