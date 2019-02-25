@@ -13,9 +13,14 @@ def index():
 
 @app.route("/searchName/<court>", methods=["POST"])
 def searchName(court):
-    first_name = request.json["first_name"]
-    last_name = request.json["last_name"]
-    dob = request.json["dob"]
+    try:
+        first_name = request.json["first_name"]
+        last_name = request.json["last_name"]
+    except KeyError:
+        return jsonify(
+            {"status": "Error: Missing required parameter."}
+        )
+    dob = request.json.get("dob")
     if court == "CP":
         return jsonify(CommonPleas.searchName(first_name, last_name, dob))
     elif court == "MDJ":
@@ -27,7 +32,12 @@ def searchName(court):
 
 @app.route("/lookupDocket/<court>", methods=["POST"])
 def lookupDocket(court):
-    docket_number = request.json["docket_number"]
+    try:
+        docket_number = request.json["docket_number"]
+    except KeyError:
+        return jsonify(
+            {"status": "Error: Missing required parameter."}
+        )
     if court == "CP":
         return jsonify(CommonPleas.lookupDocket(docket_number))
     elif court == "MDJ":

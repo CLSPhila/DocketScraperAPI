@@ -117,6 +117,23 @@ def test_mdj_docket_number(client):
     }
 
 
+def test_name_search_missing_required_info(client):
+    resp = client.post("searchName/MDJ", json={
+        "first_name": "Kathleen",
+        "dob": "06/14/1966"
+    })
+    assert resp.get_json() == {
+        "status": "Error: Missing required parameter."
+    }
+    resp = client.post("searchName/MDJ", json={
+        "last_name": "Kathleen",
+        "dob": "06/14/1966"
+    })
+    assert resp.get_json() == {
+        "status": "Error: Missing required parameter."
+        }
+
+
 def test_mdj_name_search(client):
     resp = client.post("searchName/MDJ", json={
         "first_name": "Kathleen",
