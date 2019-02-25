@@ -9,12 +9,9 @@ from selenium.webdriver.support.ui import Select, WebDriverWait
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
-from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support import expected_conditions as EC
-import os
 import csv
 import logging
-import time
 from datetime import datetime
 import pytest
 import re
@@ -28,6 +25,7 @@ SEARCH_TYPE_SELECT = (
     "ctl00$ctl00$ctl00$cphMain$cphDynamicContent" +
     "$ddlSearchType")
 
+
 class SearchTypes:
     """Different types of searches on the MDJ site"""
     # visible text of select
@@ -35,6 +33,7 @@ class SearchTypes:
 
     # visible text of select
     PARTICIPANT_NAME = "Participant Name"
+
 
 class DocketSearch:
     """Constants for searching for a single  docket."""
@@ -115,11 +114,32 @@ class NameSearch:
     )
 
     # name
+    CASE_STATUS_SELECT = (
+        "ctl00$ctl00$ctl00$cphMain$cphDynamicContent$cphSearchControls" +
+        "$udsParticipantName$ddlCaseStatus"
+    )
+
+    # name
+    CALENDAR_TOGGLE_BEFORE_DATE_FILED_TO_INPUT = (
+        "ctl00$ctl00$ctl00$cphMain$cphDynamicContent$cphSearchControls" +
+        "$udsParticipantName$DateFiledDateRangePicker$beginDateChild" +
+        "Control$ToggleImage"
+    )
+
+    # name
     SEARCH_BUTTON = (
         "ctl00$ctl00$ctl00$cphMain$cphDynamicContent$btnSearch"
     )
 
-    
+    # id
+    SEARCH_RESULTS_TABLE = (
+        "ctl00_ctl00_ctl00_cphMain_cphDynamicContent_cphResults_gvDocket"
+    )
+
+    # value
+    DATE_FILED_FROM = "01/01/1950"
+
+
 # Defaults for the webdriver #
 options = Options()
 options.headless = True
@@ -148,6 +168,26 @@ def parse_docket_number(docket_str):
         return None
     else:
         return match.groupdict()
+
+
+def next_button_enabled(driver):
+    """ Return true if there is an enabled "Next" link on the page.
+
+    The "Next" link, if enabled, indicates there are more pages of results
+    to parse for a searche
+
+    """
+    try:
+        el = driver.find_element_by_xpath(
+            "//a[contains(@href, 'casePager') and contains(text(), 'Next')]")
+        return True if el.is_enabled() else False
+    except NoSuchElementException:
+        return False
+
+
+def get_next_button(driver):
+    return driver.find_element_by_xpath(
+        "//a[contains(@href, 'casePager') and contains(text(), 'Next')]")
 
 
 def lookup_county(county_code, office_code):
@@ -246,7 +286,105 @@ class MDJ:
             date_format (str): Optional. Format for parsing `dob`. Default
                 is "%Y-%m-%d"
         """
-        pass
+        if dob:
+            try:
+                dob = datetime.strptime(dob, date_format)
+            except ValueError:
+                logging.error("Unable to parse date")
+                return {"status": "Error: check your date format"}
+
+        driver = webdriver.Firefox(
+            options=options,
+            service_log_path=None
+        )
+        driver.get(MDJ_URL)
+
+        # Select the Name search
+        search_type_select = Select(
+            driver.find_element_by_name(SEARCH_TYPE_SELECT))
+        search_type_select.select_by_visible_text(SearchTypes.PARTICIPANT_NAME)
+
+        # Enter a name to search and execute the search
+        try:
+            last_name_input = WebDriverWait(driver, 15).until(
+                EC.presence_of_element_located(
+                    (By.NAME, NameSearch.LAST_NAME_INPUT)
+                )
+            )
+        except AssertionError:
+            logging.error("Name Seaerch Fields not found.")
+            driver.quit()
+            return {"status": "Error: Name search fields not found"}
+
+        last_name_input.clear()
+        last_name_input.send_keys(last_name)
+
+        first_name_input = driver.find_element_by_name(
+            NameSearch.FIRST_NAME_INPUT)
+        first_name_input.clear()
+        first_name_input.send_keys(first_name)
+
+        first_name_input.send_keys(Keys.TAB)
+        if dob:
+
+            dob_input = driver.find_element_by_name(
+                NameSearch.DOB_INPUT
+            )
+            dob_string = dob.strftime("%m%d%Y")
+            dob_input.send_keys(dob_string)
+            dob_input.send_keys(Keys.TAB)
+
+        driver.find_element_by_name(
+            NameSearch.CASE_STATUS_SELECT).send_keys(Keys.TAB)
+
+        date_filed_from_input = driver.find_element_by_name(
+            NameSearch.DATE_FILED_FROM_INPUT)
+        driver.execute_script("""
+            arguments[0].focus()
+            arguments[0].value = arguments[1]
+            arguments[0].blur()
+        """, date_filed_from_input, NameSearch.DATE_FILED_FROM)
+
+        driver.find_element_by_name(
+            NameSearch.CALENDAR_TOGGLE_BEFORE_DATE_FILED_TO_INPUT).send_keys(
+                Keys.TAB)
+
+        date_filed_to_input = driver.find_element_by_name(
+            NameSearch.DATE_FILED_TO_INPUT)
+        date_filed_to_input.send_keys(datetime.today().strftime("%m%d%Y"))
+
+        # Execute search
+        search_button = driver.find_element_by_name(NameSearch.SEARCH_BUTTON)
+        search_button.click()
+
+        # Process results.
+        try:
+            search_results = WebDriverWait(driver, 15).until(
+                EC.presence_of_element_located(
+                    (By.ID, NameSearch.SEARCH_RESULTS_TABLE))
+            )
+        except AssertionError:
+            driver.quit()
+            return {"status": "Error: Could not find search results."}
+
+        final_results = parse_docket_search_results(search_results)
+
+        while next_button_enabled(driver):
+            # click the next button to get the next page of results
+            get_next_button(driver).click()
+
+            # Get the results from this next page.
+            search_results = WebDriverWait(driver, 15).until(
+                EC.presence_of_element_located(
+                    (By.ID, NameSearch.SEARCH_RESULTS_TABLE))
+            )
+
+            final_results.extend(parse_docket_search_results(search_results))
+
+        driver.quit()
+
+        return {"status": "success",
+                "dockets": final_results}
 
     @staticmethod
     def lookupDocket(docket_number):

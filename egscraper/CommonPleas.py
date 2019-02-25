@@ -4,16 +4,14 @@ from selenium.webdriver.support.ui import Select, WebDriverWait
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
-from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support import expected_conditions as EC
 import os
 import logging
-import time
 from datetime import datetime
-import pytest
 import re
+import pytest
 
-## CONSTANTS for the Common Pleas site ##
+# CONSTANTS for the Common Pleas site #
 COMMON_PLEAS_URL = "https://ujsportal.pacourts.us/DocketSheets/CP.aspx"
 SEARCH_TYPE_SELECT = (
     "ctl00$ctl00$ctl00$cphMain$cphDynamicContent" +
@@ -121,7 +119,7 @@ class NameSearch:
     )
 
     # value that will be entered into the FROM date.
-    DATE_FILED_FROM = "01011950"
+    DATE_FILED_FROM = "01/01/1950"
 
     # name
     DATE_FILED_TO_INPUT = (
@@ -135,14 +133,14 @@ class SEARCH_TYPES:
     participant_name = "Participant Name"
 
 
-## Defaults for the webdriver ##
+# Defaults for the webdriver #
 log_path = os.path.join(os.getcwd(), "logs", "geckodriver.log")  # TODO Remove
 options = Options()
 options.headless = True
 options.add_argument("--window-size=800,1400")
 
 
-## Helper functions ##
+# Helper functions #
 
 
 def parse_docket_number(docket_number):
@@ -291,16 +289,17 @@ class CommonPleas:
             dob_input.send_keys(dob_string)
             dob_input.send_keys(Keys.TAB)
 
-        driver.find_element_by_name(
-            NameSearch.CASE_STATUS_SELECT).send_keys(Keys.TAB)
-
         date_filed_from_input = driver.find_element_by_name(
             NameSearch.DATE_FILED_FROM_INPUT)
-        date_filed_from_input.send_keys(NameSearch.DATE_FILED_FROM)
-        date_filed_from_input.send_keys(Keys.TAB)
+        driver.execute_script("""
+            arguments[0].focus()
+            arguments[0].value = arguments[1]
+            arguments[0].blur()
+        """, date_filed_from_input, NameSearch.DATE_FILED_FROM)
 
-        driver.find_element_by_name(
-            NameSearch.CALENDAR_TOGGLE_BEFORE_DATE_FILED_TO_INPUT).send_keys(
+        calendar_box = driver.find_element_by_name(
+            NameSearch.CALENDAR_TOGGLE_BEFORE_DATE_FILED_TO_INPUT)
+        calendar_box.send_keys(
                 Keys.TAB)
 
         date_filed_to_input = driver.find_element_by_name(
