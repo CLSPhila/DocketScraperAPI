@@ -136,7 +136,7 @@ class SEARCH_TYPES:
 # Defaults for the webdriver #
 log_path = os.path.join(os.getcwd(), "logs", "geckodriver.log")  # TODO Remove
 options = Options()
-options.headless = True
+# options.headless = True
 options.add_argument("--window-size=800,1400")
 
 
@@ -173,16 +173,27 @@ def ss(driver, image_name="cp.png"):
         os.path.join(os.getcwd(), "screenshots", image_name))
 
 
+def get_current_active_page(driver):
+    """When a page's search results have multiple pages, return the number of
+       the currently loaded page."""
+    return int(driver.find_element_by_xpath(
+        "//span[@id='ctl00_ctl00_ctl00_cphMain_cphDynamicContent_" +
+        "cphDynamicContent_participantCriteriaControl_" +
+        "searchResultsGridControl_casePager']/" +
+        "div/a[@style='text-decoration:none;']"
+    ).text)
+
+
 def parse_docket_search_results(search_results):
     """ Given a table of docket search results, return a list of dicts of key
     information
     """
     docket_numbers = search_results.find_elements_by_xpath(
         "//span[contains(@id, 'docketNumberLabel')]")
-    docket_sheet_urls = search_results.find_elements_by_xpath(
-        "//td/a[contains(text(), 'Docket Sheet')]")
-    summary_urls = search_results.find_elements_by_xpath(
-        "//td/a[contains(text(), 'Court Summary')]")
+    # docket_sheet_urls = search_results.find_elements_by_xpath(
+    #     "//td/a[contains(text(), 'Docket Sheet')]")
+    # summary_urls = search_results.find_elements_by_xpath(
+    #     "//td/a[contains(text(), 'Court Summary')]")
     captions = search_results.find_elements_by_xpath(
         "//span[contains(@id, 'shortCaptionLabel')]")
     case_statuses = search_results.find_elements_by_xpath(
@@ -191,11 +202,47 @@ def parse_docket_search_results(search_results):
     otns = search_results.find_elements_by_xpath(
             "//span[contains(@id, 'otnLabel')]")
 
+    docket_sheet_urls = []
+    for docket in docket_numbers:
+        try:
+            docket_sheet_url = search_results.find_element_by_xpath(
+                (".//tr[td/span[contains(text(), '{}')]]//" +
+                 "a[contains(text(), 'Docket Sheet')]").format(docket.text)
+            ).get_attribute("href")
+        except NoSuchElementException:
+            try:
+                docket_summary_url = search_results.find_element_by_xpath(
+                    (".//tr[td/span[contains(text(), '{}')]]//" +
+                     "a[contains(@href, 'docketNumber')]").format(docket)
+                ).get_attribute("href")
+            except NoSuchElementException:
+                docket_sheet_url = "Docket Sheet url not found"
+        finally:
+            docket_sheet_urls.append(docket_sheet_url)
+
+    summary_urls = []
+    for docket in docket_numbers:
+        try:
+            summary_url = search_results.find_element_by_xpath(
+                (".//tr[td/span[contains(text(), '{}')]]//" +
+                 "a[contains(text(), 'Court Summary')]").format(docket.text)
+            ).get_attribute("href")
+        except NoSuchElementException:
+            summary_url = "Summary URL not found"
+        finally:
+            summary_urls.append(summary_url)
+
+    # check that the length of all these lists is the same, so that
+    # they get zipped up properly.
+    assert len(set(map(len, (
+        docket_numbers, docket_sheet_urls, summary_urls,
+        captions, case_statuses)))) == 1
+
     dockets = [
         {
             "docket_number": dn.text,
-            "docket_sheet_url": ds.get_attribute("href"),
-            "summary_url": su.get_attribute("href"),
+            "docket_sheet_url": ds,
+            "summary_url": su,
             "caption": cp.text,
             "case_status": cs.text,
             "otn": otn.text,
@@ -323,10 +370,26 @@ class CommonPleas:
         final_results = parse_docket_search_results(search_results)
 
         while next_button_enabled(driver):
+            current_active_page = get_current_active_page(driver)
+            next_active_page_xpath = (
+                "//span[@id='ctl00_ctl00_ctl00_cphMain_cphDynamicContent" +
+                "_cstPager']/div/a[@style='text-decoration:none;' and" +
+                " contains(text(), {})]"
+            ).format(current_active_page + 1)
+
             # click the next button to get the next page of results
             get_next_button(driver).click()
 
+            # wait until the next page number is activated, so we know
+            # that the next results have loaded.
+            WebDriverWait(driver, 15).until(
+                EC.presence_of_element_located(
+                    (By.XPATH, next_active_page_xpath)
+                )
+            )
+
             # Get the results from this next page.
+
             search_results = WebDriverWait(driver, 15).until(
                 EC.presence_of_element_located(
                     (By.ID, NameSearch.SEARCH_RESULTS_TABLE))

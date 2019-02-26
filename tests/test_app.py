@@ -67,6 +67,19 @@ def test_common_pleas_name_search(client):
     }
 
 
+def test_common_pleas_multiple_pages(client):
+    """ Searching Common Pleas docket for a name returns associated dockets """
+    first_name = "Kathleen"
+    last_name = "Kane"
+    resp = client.post(
+        "/searchName/CP",
+        json={
+            "first_name": first_name,
+            "last_name": last_name,
+        })
+    assert len(resp.get_json(["dockets"])) == 14
+
+
 def test_common_pleas_docket_number(client):
     """ Searching Common Pleas site for a specific docket number """
     resp = client.post("lookupDocket/CP", json={
