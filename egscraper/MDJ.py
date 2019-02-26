@@ -142,7 +142,7 @@ class NameSearch:
 
 # Defaults for the webdriver #
 options = Options()
-# options.headless = True
+options.headless = True
 options.add_argument("--window-size=800,1400")
 
 
@@ -247,7 +247,6 @@ def parse_docket_search_results(search_results):
     docket_numbers = search_results.find_elements_by_xpath(
         ".//td[2]")
 
-
     captions = search_results.find_elements_by_xpath(
         ".//td[4]")
     case_statuses = search_results.find_elements_by_xpath(
@@ -269,28 +268,28 @@ def parse_docket_search_results(search_results):
     docket_sheet_urls = []
     for docket in docket_numbers:
         try:
-            docket_summary_url = search_results.find_element_by_xpath(
-                (".//tr[td[contains(text(), {})]]//" +
-                 "a[contains(text(), 'Docket Sheet')]").format(docket)
-            ).text
+            docket_sheet_url = search_results.find_element_by_xpath(
+                (".//tr[td[contains(text(), '{}')]]//" +
+                 "a[contains(text(), 'Docket Sheet')]").format(docket.text)
+            ).get_attribute("href")
         except NoSuchElementException:
             try:
                 docket_summary_url = search_results.find_element_by_xpath(
-                    (".//tr[td[contains(text(), {})]]//" +
+                    (".//tr[td[contains(text(), '{}')]]//" +
                      "a[contains(@href, 'docketNumber')]").format(docket)
-                ).text
+                ).get_attribute("href")
             except NoSuchElementException:
-                docket_summary_url = "Docket Sheet url not found"
+                docket_sheet_url = "Docket Sheet url not found"
         finally:
-            docket_sheet_urls.append(docket_summary_url)
+            docket_sheet_urls.append(docket_sheet_url)
 
     summary_urls = []
     for docket in docket_numbers:
         try:
             summary_url = search_results.find_element_by_xpath(
-                (".//tr[td[contains(text(), {})]]//" +
-                 "a[contains(text(), 'Court Summary')]").format(docket)
-            ).text
+                (".//tr[td[contains(text(), '{}')]]//" +
+                 "a[contains(text(), 'Court Summary')]").format(docket.text)
+            ).get_attribute("href")
         except NoSuchElementException:
             summary_url = "Summary URL not found"
         finally:
