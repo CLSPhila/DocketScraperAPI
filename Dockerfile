@@ -14,5 +14,8 @@ RUN  pip install --upgrade pip && \
      pip install pipenv && \
      pipenv install --system
 
+RUN useradd -ms /bin/bash eg_user
+
+USER eg_user
 
 ENTRYPOINT ["gunicorn", "--config", "/app/gunicorn_config.py", "egscraper:app"]
