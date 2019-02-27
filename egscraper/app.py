@@ -5,6 +5,7 @@ from .MDJ import MDJ
 import logging
 
 app = Flask(__name__)
+logging.basicConfig(level=logging.ERROR)
 
 
 @app.route("/")
@@ -14,11 +15,11 @@ def index():
 
 @app.route("/searchName/<court>", methods=["POST"])
 def searchName(court):
-    logging.info(request.json)
     try:
         first_name = request.json["first_name"]
         last_name = request.json["last_name"]
     except KeyError:
+        logging.error("Request missing parameter")
         return jsonify(
             {"status": "Error: Missing required parameter."}
         )
