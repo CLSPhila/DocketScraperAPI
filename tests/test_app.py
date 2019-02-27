@@ -77,7 +77,7 @@ def test_common_pleas_multiple_pages(client):
             "first_name": first_name,
             "last_name": last_name,
         })
-    assert len(resp.get_json(["dockets"])) == 14
+    assert len(resp.get_json()["dockets"]) == 14
 
 
 def test_common_pleas_docket_number(client):

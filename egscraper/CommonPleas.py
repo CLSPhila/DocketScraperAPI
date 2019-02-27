@@ -136,7 +136,7 @@ class SEARCH_TYPES:
 # Defaults for the webdriver #
 log_path = os.path.join(os.getcwd(), "logs", "geckodriver.log")  # TODO Remove
 options = Options()
-# options.headless = True
+options.headless = True
 options.add_argument("--window-size=800,1400")
 
 
@@ -368,13 +368,14 @@ class CommonPleas:
             return {"status": "Error: Could not find search results."}
 
         final_results = parse_docket_search_results(search_results)
-
         while next_button_enabled(driver):
             current_active_page = get_current_active_page(driver)
             next_active_page_xpath = (
                 "//span[@id='ctl00_ctl00_ctl00_cphMain_cphDynamicContent" +
-                "_cstPager']/div/a[@style='text-decoration:none;' and" +
-                " contains(text(), {})]"
+                "_cphDynamicContent_participantCriteriaControl_" +
+                "searchResultsGridControl_casePager']" +
+                "/div/a[@style='text-decoration:none;' and" +
+                " contains(text(), '{}')]"
             ).format(current_active_page + 1)
 
             # click the next button to get the next page of results
@@ -394,7 +395,6 @@ class CommonPleas:
                 EC.presence_of_element_located(
                     (By.ID, NameSearch.SEARCH_RESULTS_TABLE))
             )
-
             final_results.extend(parse_docket_search_results(search_results))
 
         driver.quit()

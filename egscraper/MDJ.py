@@ -426,7 +426,7 @@ class MDJ:
             next_active_page_xpath = (
                 "//span[@id='ctl00_ctl00_ctl00_cphMain_cphDynamicContent" +
                 "_cstPager']/div/a[@style='text-decoration:none;' and" +
-                " contains(text(), {})]"
+                " contains(text(), '{}')]"
             ).format(current_active_page + 1)
 
             # click the next button to get the next page of results
