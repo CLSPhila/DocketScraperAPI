@@ -130,7 +130,7 @@ def test_mdj_docket_number(client):
             "caption": "Comm. v. Quickley, James Lewis III",
             "case_status": "Closed",
             "otn": "L5321175",
-            "dob": "6/14/1966",
+            "dob": "7/06/1976",
 
         }
     }
