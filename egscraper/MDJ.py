@@ -246,14 +246,15 @@ def parse_docket_search_results(search_results):
     """
     docket_numbers = search_results.find_elements_by_xpath(
         ".//td[2]")
-
     captions = search_results.find_elements_by_xpath(
         ".//td[4]")
     case_statuses = search_results.find_elements_by_xpath(
-        ".//td[7]"
-    )
+        ".//td[7]")
     otns = search_results.find_elements_by_xpath(
-            ".//td[9]")
+        ".//td[9]")
+    dobs = search_results.find_elements_by_xpath(
+        ".//td[12]"
+    )
 
     # Can't just grab these urls because some cases don't
     # have a summary, which will throw off the lengths of arrays being zipped
@@ -309,14 +310,16 @@ def parse_docket_search_results(search_results):
             "caption": cp.text,
             "case_status": cs.text,
             "otn": otn.text,
+            "dob": dob.text
         }
-        for dn, ds, su, cp, cs, otn in zip(
+        for dn, ds, su, cp, cs, otn, dob in zip(
             docket_numbers,
             docket_sheet_urls,
             summary_urls,
             captions,
             case_statuses,
             otns,
+            dobs,
         )
     ]
     return dockets

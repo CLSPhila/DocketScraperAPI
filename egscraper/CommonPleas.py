@@ -197,10 +197,11 @@ def parse_docket_search_results(search_results):
     captions = search_results.find_elements_by_xpath(
         "//span[contains(@id, 'shortCaptionLabel')]")
     case_statuses = search_results.find_elements_by_xpath(
-        "//span[contains(@id, 'caseStatusNameLabel')]"
-    )
+        "//span[contains(@id, 'caseStatusNameLabel')]")
     otns = search_results.find_elements_by_xpath(
             "//span[contains(@id, 'otnLabel')]")
+    dobs = search_results.find_elements_by_xpath(
+        "//span[contains(@id, 'DobLabel')]")
 
     docket_sheet_urls = []
     for docket in docket_numbers:
@@ -211,7 +212,7 @@ def parse_docket_search_results(search_results):
             ).get_attribute("href")
         except NoSuchElementException:
             try:
-                docket_summary_url = search_results.find_element_by_xpath(
+                docket_sheet_url = search_results.find_element_by_xpath(
                     (".//tr[td/span[contains(text(), '{}')]]//" +
                      "a[contains(@href, 'docketNumber')]").format(docket)
                 ).get_attribute("href")
@@ -236,7 +237,7 @@ def parse_docket_search_results(search_results):
     # they get zipped up properly.
     assert len(set(map(len, (
         docket_numbers, docket_sheet_urls, summary_urls,
-        captions, case_statuses)))) == 1
+        captions, case_statuses, dobs)))) == 1
 
     dockets = [
         {
@@ -246,14 +247,16 @@ def parse_docket_search_results(search_results):
             "caption": cp.text,
             "case_status": cs.text,
             "otn": otn.text,
+            "dob": dob.text,
         }
-        for dn, ds, su, cp, cs, otn in zip(
+        for dn, ds, su, cp, cs, otn, dob in zip(
             docket_numbers,
             docket_sheet_urls,
             summary_urls,
             captions,
             case_statuses,
             otns,
+            dobs
         )
     ]
     return dockets
