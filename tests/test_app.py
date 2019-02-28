@@ -31,6 +31,7 @@ def test_common_pleas_name_search(client):
              "caption": 'Comm. v. Kane, Kathleen Granahan',
              "case_status": "Closed",
              "otn": "T7090322",
+             "dob": "6/14/1966",
              "docket_sheet_url":
                 ("https://ujsportal.pacourts.us/DocketSheets/" +
                  "CPReport.ashx?docketNumber=CP-46-CR-0008423-2015" +
@@ -43,6 +44,7 @@ def test_common_pleas_name_search(client):
              "caption": "Comm v Kane, Kathleen Granahan",
              "case_status": "Closed",
              "otn": "T7090322",
+             "dob": "6/14/1966",
              "docket_sheet_url":
                 ("https://ujsportal.pacourts.us/DocketSheets/" +
                  "CPReport.ashx?docketNumber=CP-46-MD-0002457-2015&" +
@@ -55,6 +57,7 @@ def test_common_pleas_name_search(client):
              "caption": 'Comm. v. Kane, Kathleen Granahan',
              "case_status": "Closed",
              "otn": "T6863802",
+             "dob": "6/14/1966",
              "docket_sheet_url":
                 ("https://ujsportal.pacourts.us/DocketSheets/" +
                  "CPReport.ashx?docketNumber=CP-46-CR-0006239-2015" +
@@ -100,6 +103,7 @@ def test_common_pleas_docket_number(client):
             "caption": "Comm. v. Kane, Kathleen Granahan",
             "case_status": "Closed",
             "otn": "T6863802",
+            "dob": "6/14/1966",
         }
     }
 
@@ -125,7 +129,9 @@ def test_mdj_docket_number(client):
             ),
             "caption": "Comm. v. Quickley, James Lewis III",
             "case_status": "Closed",
-            "otn": "L5321175"
+            "otn": "L5321175",
+            "dob": "6/14/1966",
+
         }
     }
 
@@ -169,7 +175,8 @@ def test_mdj_name_search(client):
              ),
              "caption": "Comm. v. Kane, Kathleen Granahan",
              "case_status": "Closed",
-             "otn": "T7090322"},
+             "otn": "T7090322",
+             "dob": "6/14/1966"},
             {"docket_number": "MJ-38120-CR-0000298-2015",
              "docket_sheet_url": (
                 "https://ujsportal.pacourts.us/DocketSheets/MDJReport.ashx" +
@@ -183,7 +190,8 @@ def test_mdj_name_search(client):
              ),
              "caption": "Comm. v. Kane, Kathleen Granahan",
              "case_status": "Closed",
-             "otn": "T6863802"},
+             "otn": "T6863802",
+             "dob": "6/14/1966"},
         ]
     }
 
