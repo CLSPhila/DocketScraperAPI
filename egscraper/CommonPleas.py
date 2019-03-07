@@ -470,8 +470,8 @@ class CommonPleas:
             response = response[0]
         except AssertionError:
             response = {"status": "no dockets found"}
-        finally:
-            driver.quit()
-            current_app.logger.info("Completed search for common pleas docket.")
-            return {"status": "success",
-                    "docket": response}
+
+        driver.quit()
+        current_app.logger.info("Completed search for common pleas docket.")
+        return {"status": "success",
+                "docket": response}
