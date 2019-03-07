@@ -11,7 +11,7 @@ from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.support import expected_conditions as EC
 import csv
-import logging
+from flask import current_app
 from datetime import datetime
 import re
 
@@ -340,12 +340,12 @@ class MDJ:
             date_format (str): Optional. Format for parsing `dob`. Default
                 is "%Y-%m-%d"
         """
-        logging.info("Searching by name for MDJ dockets")
+        current_app.logger.info("Searching by name for MDJ dockets")
         if dob:
             try:
                 dob = datetime.strptime(dob, date_format)
             except ValueError:
-                logging.error("Unable to parse date")
+                current_app.logger.error("Unable to parse date")
                 return {"status": "Error: check your date format"}
 
         driver = webdriver.Firefox(
@@ -367,7 +367,7 @@ class MDJ:
                 )
             )
         except AssertionError:
-            logging.error("Name Seaerch Fields not found.")
+            current_app.logger.error("Name Seaerch Fields not found.")
             driver.quit()
             return {"status": "Error: Name search fields not found"}
 
@@ -453,7 +453,7 @@ class MDJ:
             final_results.extend(parse_docket_search_results(search_results))
 
         driver.quit()
-        logging.info("Completed searching by name for MDJ Dockets")
+        current_app.logger.info("Completed searching by name for MDJ Dockets")
         return {"status": "success",
                 "dockets": final_results}
 
@@ -469,7 +469,7 @@ class MDJ:
             docket_number (str): Docket number like CP-45-CR-1234567-2019
         """
         docket_dict = parse_docket_number(docket_number)
-        logging.info("searching by docket number for mdj dockets.")
+        current_app.logger.info("searching by docket number for mdj dockets.")
         driver = webdriver.Firefox(
             options=options,
             service_log_path=None
@@ -532,5 +532,5 @@ class MDJ:
             return {"status": "Error: could not parse search results."}
 
         driver.quit()
-        logging.info("Completed searching by docket number for mdj dockets.")
+        current_app.logger.info("Completed searching by docket number for mdj dockets.")
         return {"status": "success", "docket": final_results[0]}

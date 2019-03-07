@@ -5,4 +5,4 @@ worker_connections = 200
 timeout = 90
 keepalive = 2
 spew = False
-daemon = True
+daemon = False
