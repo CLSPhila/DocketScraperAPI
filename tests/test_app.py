@@ -1,6 +1,9 @@
 from test_config import client
 import json
 import pytest
+import asyncio
+import logging
+
 
 def test_app_index(client):
     resp = client.get("/")
@@ -108,11 +111,18 @@ def test_common_pleas_docket_number(client):
     }
 
 
-def test_mdj_docket_number(client):
+def test_mdj_docket_number(client, benchmark):
     """ Searching MDJ site for a specific docket number """
-    resp = client.post("lookupDocket/MDJ", json={
-        "docket_number": "MJ-12000-CR-0000010-2010"
-    })
+    resp = benchmark(
+        client.post,
+        "lookupDocket/MDJ",
+        json={
+            "docket_number": "MJ-12000-CR-0000010-2010"
+        }
+    )
+    # resp = client.post("lookupDocket/MDJ", json={
+    #             "docket_number": "MJ-12000-CR-0000010-2010"
+    #         })
     assert resp.get_json() == {
         "status": "success",
         "docket": {
