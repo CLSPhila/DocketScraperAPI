@@ -454,6 +454,7 @@ class MDJ:
 
         driver.quit()
         current_app.logger.info("Completed searching by name for MDJ Dockets")
+        current_app.logger.info("found {} dockets".format(len(final_results)))
         return {"status": "success",
                 "dockets": final_results}
 
