@@ -75,13 +75,15 @@ def test_common_pleas_name_search(client):
 
 def test_common_pleas_multiple_pages(client):
     """ Searching Common Pleas docket for a name returns associated dockets """
-    first_name = "Kathleen"
-    last_name = "Kane"
+    first_name = "John"
+    last_name = "Smith"
+    dob = "09/05/1993"
     resp = client.post(
         "/searchName/CP",
         json={
             "first_name": first_name,
             "last_name": last_name,
+            "dob": dob
         })
     assert len(resp.get_json()["dockets"]) == 14
 
@@ -211,4 +213,4 @@ def test_mdj_multiple_pages(client):
         "first_name": "Kathleen",
         "last_name": "Kane",
     })
-    assert len(resp.get_json()["dockets"]) == 40
+    assert len(resp.get_json()["dockets"]) == 10

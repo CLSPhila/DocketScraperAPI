@@ -371,7 +371,7 @@ class CommonPleas:
             return {"status": "Error: Could not find search results."}
 
         final_results = parse_docket_search_results(search_results)
-        while next_button_enabled(driver):
+        while next_button_enabled(driver) and dob:
             current_active_page = get_current_active_page(driver)
             next_active_page_xpath = (
                 "//span[@id='ctl00_ctl00_ctl00_cphMain_cphDynamicContent" +
