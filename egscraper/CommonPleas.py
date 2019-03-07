@@ -9,7 +9,6 @@ import os
 import logging
 from datetime import datetime
 import re
-import pytest
 
 # CONSTANTS for the Common Pleas site #
 COMMON_PLEAS_URL = "https://ujsportal.pacourts.us/DocketSheets/CP.aspx"
@@ -297,7 +296,7 @@ class CommonPleas:
                 logging.error("Unable to parse date.")
                 return {"status": "Error: check your date format"}
 
-        logging.info("Searchng for dockets")
+        logging.info("Searching by Name for Common Pleas dockets")
         driver = webdriver.Firefox(
             options=options,
             service_log_path=None)
@@ -401,7 +400,7 @@ class CommonPleas:
             final_results.extend(parse_docket_search_results(search_results))
 
         driver.quit()
-
+        logging.info("Completed Name Search for Common Pleas Dockets.")
         return {"status": "success",
                 "dockets": final_results}
 
@@ -416,6 +415,7 @@ class CommonPleas:
         Args:
             docket_number (str): Docket number like CP-45-CR-1234567-2019
         """
+        logging.info("Searching by docket number for common pleas docket")
         docket_dict = parse_docket_number(docket_number)
 
         driver = webdriver.Firefox(
@@ -471,5 +471,6 @@ class CommonPleas:
             response = {"status": "no dockets found"}
         finally:
             driver.quit()
+            logging.info("Completed search for common pleas docket.")
             return {"status": "success",
                     "docket": response}
