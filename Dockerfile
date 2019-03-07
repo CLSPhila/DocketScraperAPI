@@ -18,4 +18,4 @@ RUN useradd -ms /bin/bash eg_user
 
 USER eg_user
 
-ENTRYPOINT ["gunicorn", "--config", "/app/gunicorn_config.py", "egscraper:app"]
+ENTRYPOINT ["gunicorn", "--config", "/app/gunicorn_config.py", "--log-level", "info", "egscraper:app"]

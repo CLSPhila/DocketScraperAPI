@@ -88,6 +88,17 @@ docker-compose -f dev-compose up
 docker-compose -f dev-compose exec api pytest /app
 ```
 
+### Apache Bench
+
+This app is really slow, so its necessary to test out its performance, even for tiny numbers of users. I've used apache Bench for this.
+
+Try making multiple concurrent requests to the app by starting it in a container and running `ab` against it.
+
+```
+docker-compose -f dev-compose up
+ab -p post_data.txt -T application/json -n 3 -c 3  http://localhost:8800
+```
+
 ### Other development resources
 
 [https://selenium-python.readthedocs.io/getting-started.html#simple-usage](selenium-python bindings)

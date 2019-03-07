@@ -6,10 +6,10 @@ from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.support import expected_conditions as EC
 import os
-import logging
 from datetime import datetime
 import re
-import pytest
+from flask import current_app
+
 
 # CONSTANTS for the Common Pleas site #
 COMMON_PLEAS_URL = "https://ujsportal.pacourts.us/DocketSheets/CP.aspx"
@@ -294,10 +294,10 @@ class CommonPleas:
             try:
                 dob = datetime.strptime(dob, date_format)
             except ValueError:
-                logging.error("Unable to parse date.")
+                current_app.logger.error("Unable to parse date.")
                 return {"status": "Error: check your date format"}
 
-        logging.info("Searchng for dockets")
+        current_app.logger.info("Searching by Name for Common Pleas dockets")
         driver = webdriver.Firefox(
             options=options,
             service_log_path=None)
@@ -316,7 +316,7 @@ class CommonPleas:
                     (By.NAME, NameSearch.LAST_NAME_INPUT))
             )
         except AssertionError:
-            logging.error("Name Search Fields not found.")
+            current_app.logger.error("Name Search Fields not found.")
             driver.quit()
             return {"status": "Error: Name search fields not found"}
 
@@ -371,7 +371,7 @@ class CommonPleas:
             return {"status": "Error: Could not find search results."}
 
         final_results = parse_docket_search_results(search_results)
-        while next_button_enabled(driver):
+        while next_button_enabled(driver) and dob:
             current_active_page = get_current_active_page(driver)
             next_active_page_xpath = (
                 "//span[@id='ctl00_ctl00_ctl00_cphMain_cphDynamicContent" +
@@ -401,7 +401,7 @@ class CommonPleas:
             final_results.extend(parse_docket_search_results(search_results))
 
         driver.quit()
-
+        current_app.logger.info("Completed Name Search for Common Pleas Dockets.")
         return {"status": "success",
                 "dockets": final_results}
 
@@ -416,6 +416,7 @@ class CommonPleas:
         Args:
             docket_number (str): Docket number like CP-45-CR-1234567-2019
         """
+        current_app.logger.info("Searching by docket number for common pleas docket")
         docket_dict = parse_docket_number(docket_number)
 
         driver = webdriver.Firefox(
@@ -461,15 +462,16 @@ class CommonPleas:
         # Collect results
             response = parse_docket_search_results(search_results)
             if len(response) != 1:
-                logging.warning(
+                current_app.logger.warning(
                     "While searching for {}, ".format(docket_number)
                 )
-                logging.warning(
+                current_app.logger.warning(
                     "I found {} dockets, instead of 1.".format(len(response)))
             response = response[0]
         except AssertionError:
             response = {"status": "no dockets found"}
         finally:
             driver.quit()
+            current_app.logger.info("Completed search for common pleas docket.")
             return {"status": "success",
                     "docket": response}

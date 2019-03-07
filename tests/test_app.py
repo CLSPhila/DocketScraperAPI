@@ -1,6 +1,9 @@
 from test_config import client
 import json
 import pytest
+import asyncio
+import logging
+
 
 def test_app_index(client):
     resp = client.get("/")
@@ -72,13 +75,15 @@ def test_common_pleas_name_search(client):
 
 def test_common_pleas_multiple_pages(client):
     """ Searching Common Pleas docket for a name returns associated dockets """
-    first_name = "Kathleen"
-    last_name = "Kane"
+    first_name = "John"
+    last_name = "Smith"
+    dob = "09/05/1993"
     resp = client.post(
         "/searchName/CP",
         json={
             "first_name": first_name,
             "last_name": last_name,
+            "dob": dob
         })
     assert len(resp.get_json()["dockets"]) == 14
 
@@ -108,11 +113,18 @@ def test_common_pleas_docket_number(client):
     }
 
 
-def test_mdj_docket_number(client):
+def test_mdj_docket_number(client, benchmark):
     """ Searching MDJ site for a specific docket number """
-    resp = client.post("lookupDocket/MDJ", json={
-        "docket_number": "MJ-12000-CR-0000010-2010"
-    })
+    resp = benchmark(
+        client.post,
+        "lookupDocket/MDJ",
+        json={
+            "docket_number": "MJ-12000-CR-0000010-2010"
+        }
+    )
+    # resp = client.post("lookupDocket/MDJ", json={
+    #             "docket_number": "MJ-12000-CR-0000010-2010"
+    #         })
     assert resp.get_json() == {
         "status": "success",
         "docket": {
@@ -201,4 +213,4 @@ def test_mdj_multiple_pages(client):
         "first_name": "Kathleen",
         "last_name": "Kane",
     })
-    assert len(resp.get_json()["dockets"]) == 40
+    assert len(resp.get_json()["dockets"]) == 10

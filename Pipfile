@@ -4,6 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [dev-packages]
+pytest-benchmark = "*"
 
 [packages]
 atomicwrites = "==1.3.0"
@@ -23,6 +24,7 @@ Flask = "==1.0.2"
 MarkupSafe = "==1.1.0"
 Werkzeug = "==0.14.1"
 egscraper = {path = ".", editable = true}
+line-profiler = "*"
 
 [requires]
 python_version = "3.6"
