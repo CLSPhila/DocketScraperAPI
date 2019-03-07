@@ -6,6 +6,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8800:8800"
+    environment:
+      - GUNICORN_LOGGER=true
     volumes:
       - type: bind
         source: .

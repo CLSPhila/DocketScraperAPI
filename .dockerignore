@@ -1,1 +1,4 @@
 .git
+.env
+.benchmarks
+.dev-compose

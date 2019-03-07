@@ -1,10 +1,14 @@
 from flask import Flask, jsonify, request
-
 from .CommonPleas import CommonPleas
 from .MDJ import MDJ
-
+import os
+import logging
 
 app = Flask(__name__)
+if os.getenv("GUNICORN_LOGGER"):
+    gunicorn_logger = logging.getLogger('gunicorn.error')
+    app.logger.handlers = gunicorn_logger.handlers
+    app.logger.setLevel(gunicorn_logger.level)
 
 
 @app.route("/")
