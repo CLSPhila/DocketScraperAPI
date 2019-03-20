@@ -8,12 +8,12 @@ from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.support.ui import Select, WebDriverWait
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import (
+    NoSuchElementException, WebDriverException, TimeoutException)
 from selenium.webdriver.support import expected_conditions as EC
 import csv
-import logging
+from flask import current_app
 from datetime import datetime
-import pytest
 import re
 
 
@@ -77,6 +77,9 @@ class DocketSearch:
         "ctl00_ctl00_ctl00_cphMain_cphDynamicContent_cphResults_gvDocket"
     )
 
+    # xpath
+    NO_RESULTS_FOUND = "//td[contains(text(), 'No Records Found')]"
+
 
 class NameSearch:
     """ Constants for searching MDJ dockets by name """
@@ -135,6 +138,9 @@ class NameSearch:
     SEARCH_RESULTS_TABLE = (
         "ctl00_ctl00_ctl00_cphMain_cphDynamicContent_cphResults_gvDocket"
     )
+
+    # xpath
+    NO_RESULTS_FOUND = "//td[contains(text(), 'No Records Found')]"
 
     # value
     DATE_FILED_FROM = "01/01/1950"
@@ -275,7 +281,7 @@ def parse_docket_search_results(search_results):
             ).get_attribute("href")
         except NoSuchElementException:
             try:
-                docket_summary_url = search_results.find_element_by_xpath(
+                docket_sheet_url = search_results.find_element_by_xpath(
                     (".//tr[td[contains(text(), '{}')]]//" +
                      "a[contains(@href, 'docketNumber')]").format(docket)
                 ).get_attribute("href")
@@ -325,11 +331,25 @@ def parse_docket_search_results(search_results):
     return dockets
 
 
+def catch_webdriver_exception(func):
+    """ Decorator that catches webdriver errors.
+    """
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except WebDriverException:
+            return {"status": "Web Driver Error"}
+        except TimeoutException:
+            return {"status": "Timeout. No dockets found."}
+    return wrapper
+
+
 class MDJ:
     """ Class for searching for dockets in Majesterial District courts
     """
 
     @staticmethod
+    @catch_webdriver_exception
     def searchName(first_name, last_name, dob=None, date_format="%m/%d/%Y"):
         """
         Search the MDJ site for criminal records of a person
@@ -341,11 +361,12 @@ class MDJ:
             date_format (str): Optional. Format for parsing `dob`. Default
                 is "%Y-%m-%d"
         """
+        current_app.logger.info("Searching by name for MDJ dockets")
         if dob:
             try:
                 dob = datetime.strptime(dob, date_format)
             except ValueError:
-                logging.error("Unable to parse date")
+                current_app.logger.error("Unable to parse date")
                 return {"status": "Error: check your date format"}
 
         driver = webdriver.Firefox(
@@ -367,7 +388,7 @@ class MDJ:
                 )
             )
         except AssertionError:
-            logging.error("Name Seaerch Fields not found.")
+            current_app.logger.error("Name Seaerch Fields not found.")
             driver.quit()
             return {"status": "Error: Name search fields not found"}
 
@@ -414,17 +435,25 @@ class MDJ:
 
         # Process results.
         try:
+            search_xpath = ("//*[@id='{}'] | {}".format(
+                NameSearch.SEARCH_RESULTS_TABLE,
+                NameSearch.NO_RESULTS_FOUND
+            ))
             search_results = WebDriverWait(driver, 15).until(
                 EC.presence_of_element_located(
-                    (By.ID, NameSearch.SEARCH_RESULTS_TABLE))
+                    (By.XPATH, search_xpath))
             )
         except AssertionError:
             driver.quit()
             return {"status": "Error: Could not find search results."}
 
+        if "No Records Found" in search_results.text:
+            driver.quit()
+            return {"status": "No Dockets Found"}
+
         final_results = parse_docket_search_results(search_results)
 
-        while next_button_enabled(driver):
+        while next_button_enabled(driver) and dob:
             current_active_page = get_current_active_page(driver)
             next_active_page_xpath = (
                 "//span[@id='ctl00_ctl00_ctl00_cphMain_cphDynamicContent" +
@@ -453,11 +482,13 @@ class MDJ:
             final_results.extend(parse_docket_search_results(search_results))
 
         driver.quit()
-
+        current_app.logger.info("Completed searching by name for MDJ Dockets")
+        current_app.logger.info("found {} dockets".format(len(final_results)))
         return {"status": "success",
                 "dockets": final_results}
 
     @staticmethod
+    @catch_webdriver_exception
     def lookupDocket(docket_number):
         """
         Lookup information about a single docket in the MDJ courts
@@ -469,7 +500,7 @@ class MDJ:
             docket_number (str): Docket number like CP-45-CR-1234567-2019
         """
         docket_dict = parse_docket_number(docket_number)
-
+        current_app.logger.info("searching by docket number for mdj dockets.")
         driver = webdriver.Firefox(
             options=options,
             service_log_path=None
@@ -516,13 +547,22 @@ class MDJ:
 
         # Process results.
         try:
+            search_xpath = "//*[@id='{}'] | {}".format(
+                DocketSearch.SEARCH_RESULTS_TABLE,
+                DocketSearch.NO_RESULTS_FOUND
+            )
             search_results = WebDriverWait(driver, 15).until(
                 EC.presence_of_element_located(
-                    (By.ID, DocketSearch.SEARCH_RESULTS_TABLE))
+                    (By.XPATH, search_xpath))
             )
+
         except AssertionError:
             driver.quit()
             return {"status": "Error: Could not find search results."}
+
+        if "No Records Found" in search_results.text:
+            driver.quit()
+            return {"status": "No Dockets Found"}
 
         try:
             final_results = parse_docket_search_results(search_results)
@@ -532,4 +572,6 @@ class MDJ:
             return {"status": "Error: could not parse search results."}
 
         driver.quit()
+        current_app.logger.info(
+            "Completed searching by docket number for mdj dockets.")
         return {"status": "success", "docket": final_results[0]}

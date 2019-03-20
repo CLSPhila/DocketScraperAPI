@@ -1,6 +1,7 @@
 from test_config import client
-import json
 import pytest
+import logging
+
 
 def test_app_index(client):
     resp = client.get("/")
@@ -70,17 +71,46 @@ def test_common_pleas_name_search(client):
     }
 
 
-def test_common_pleas_multiple_pages(client):
-    """ Searching Common Pleas docket for a name returns associated dockets """
-    first_name = "Kathleen"
-    last_name = "Kane"
+def test_common_pleas_name_search_no_dockets(client):
+    """ Search for a name that returns no results"""
+    first_name = "Godrick"
+    last_name = "Gryffindor"
+    dob = "04/01/1035"
     resp = client.post(
         "/searchName/CP",
         json={
             "first_name": first_name,
             "last_name": last_name,
+            "dob": dob
+        })
+    assert resp.get_json() == {
+        "status": "No Dockets Found"
+    }
+
+
+def test_common_pleas_multiple_pages(client):
+    """ Searching Common Pleas docket for a name returns associated dockets """
+    first_name = "John"
+    last_name = "Smith"
+    dob = "09/05/1993"
+    resp = client.post(
+        "/searchName/CP",
+        json={
+            "first_name": first_name,
+            "last_name": last_name,
+            "dob": dob
         })
     assert len(resp.get_json()["dockets"]) == 14
+
+
+def test_common_pleas_docket_search_no_docket(client):
+    """ Searching Common pleas court for a docket that doesn't exist"""
+    resp = client.post("lookupDocket/CP", json={
+        "docket_number": "CP-46-CR-9999999-2015"
+    })
+    assert resp.get_json() == {
+        "status": "No Dockets Found"
+    }
 
 
 def test_common_pleas_docket_number(client):
@@ -110,10 +140,12 @@ def test_common_pleas_docket_number(client):
 
 def test_mdj_docket_number(client):
     """ Searching MDJ site for a specific docket number """
-    resp = client.post("lookupDocket/MDJ", json={
-        "docket_number": "MJ-12000-CR-0000010-2010"
-    })
-    assert resp.get_json() == {
+    resp = client.post(
+            "lookupDocket/MDJ",
+            json={
+                "docket_number": "MJ-12000-CR-0000010-2010"
+            })
+    resp.get_json() == {
         "status": "success",
         "docket": {
             "docket_number": "MJ-12000-CR-0000010-2010",
@@ -133,6 +165,33 @@ def test_mdj_docket_number(client):
             "dob": "7/06/1976",
 
         }
+    }
+
+
+def test_mdj_name_search_no_dockets(client):
+    """ Search for a name that returns no results"""
+    first_name = "Godrick"
+    last_name = "Gryffindor"
+    dob = "04/01/1035"
+    resp = client.post(
+        "/searchName/MDJ",
+        json={
+            "first_name": first_name,
+            "last_name": last_name,
+            "dob": dob
+        })
+    assert resp.get_json() == {
+        "status": "No Dockets Found"
+    }
+
+
+def test_mdj_docket_search_no_docket(client):
+    """ Searching MDJ court for a docket that doesn't exist"""
+    resp = client.post("lookupDocket/MDJ", json={
+        "docket_number": "MJ-57301-CR-9999999-2019"
+    })
+    assert resp.get_json() == {
+        "status": "No Dockets Found"
     }
 
 
@@ -201,4 +260,4 @@ def test_mdj_multiple_pages(client):
         "first_name": "Kathleen",
         "last_name": "Kane",
     })
-    assert len(resp.get_json()["dockets"]) == 40
+    assert len(resp.get_json()["dockets"]) == 10
