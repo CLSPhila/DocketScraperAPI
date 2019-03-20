@@ -3,8 +3,9 @@ from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.support.ui import Select, WebDriverWait
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import (
+    NoSuchElementException, WebDriverException, TimeoutException)
 import os
 from datetime import datetime
 import re
@@ -53,10 +54,16 @@ class DocketSearch:
         "$docketNumberCriteriaControl$searchCommandControl"
     )
 
+    # id
     SEARCH_RESULTS_TABLE = (
         "ctl00_ctl00_ctl00_cphMain_cphDynamicContent_cph" +
         "DynamicContent_docketNumberCriteriaControl_searchResultsGrid" +
         "Control_resultsPanel"
+    )
+
+    # xpath
+    NO_RESULTS_FOUND = (
+        "//td[contains(text(), 'No Cases Found')]"
     )
 
 
@@ -94,6 +101,11 @@ class NameSearch:
     SEARCH_RESULTS_TABLE = (
         "ctl00_ctl00_ctl00_cphMain_cphDynamicContent_cphDynamicContent" +
         "_participantCriteriaControl_searchResultsGridControl_resultsPanel"
+    )
+
+    # xpath
+    NO_RESULTS_FOUND = (
+        "//td[contains(text(), 'No Cases Found')]"
     )
 
     # name
@@ -276,9 +288,23 @@ def get_next_button(driver):
         "//a[contains(@href, 'casePager') and contains(text(), 'Next')]")
 
 
+def catch_webdriver_exception(func):
+    """ Decorator that catches webdriver errors.
+    """
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except WebDriverException:
+            return {"status": "Web Driver Error"}
+        except TimeoutException:
+            return {"status": "Timeout. No dockets found."}
+    return wrapper
+
+
 class CommonPleas:
 
     @staticmethod
+    @catch_webdriver_exception
     def searchName(first_name, last_name, dob=None, date_format="%m/%d/%Y"):
         """
         Search the Common Pleas site for criminal records of a person
@@ -362,14 +388,22 @@ class CommonPleas:
 
         # Process results.
         try:
-            search_results = WebDriverWait(driver, 15).until(
-                EC.presence_of_element_located(
-                    (By.ID, NameSearch.SEARCH_RESULTS_TABLE))
+            results_xpath = "//*[@id='{}'] | {}".format(
+                NameSearch.SEARCH_RESULTS_TABLE,
+                NameSearch.NO_RESULTS_FOUND
             )
-        except AssertionError:
+            search_results = WebDriverWait(driver, 15).until(
+                    EC.presence_of_element_located(
+                        (By.XPATH, results_xpath)
+                    )
+            )
+        except TimeoutException:
             driver.quit()
             return {"status": "Error: Could not find search results."}
 
+        if "No Cases Found" in search_results.text:
+            driver.quit()
+            return {"status": "No Dockets Found"}
         final_results = parse_docket_search_results(search_results)
         while next_button_enabled(driver) and dob:
             current_active_page = get_current_active_page(driver)
@@ -401,11 +435,15 @@ class CommonPleas:
             final_results.extend(parse_docket_search_results(search_results))
 
         driver.quit()
-        current_app.logger.info("Completed Name Search for Common Pleas Dockets.")
+        current_app.logger.info(
+            "Completed Name Search for Common Pleas Dockets.")
+        current_app.logger.info("Found {} dockets.".format(len(final_results)))
+
         return {"status": "success",
                 "dockets": final_results}
 
     @staticmethod
+    @catch_webdriver_exception
     def lookupDocket(docket_number):
         """
         Lookup information about a single docket
@@ -416,7 +454,8 @@ class CommonPleas:
         Args:
             docket_number (str): Docket number like CP-45-CR-1234567-2019
         """
-        current_app.logger.info("Searching by docket number for common pleas docket")
+        current_app.logger.info(
+            "Searching by docket number for common pleas docket")
         docket_dict = parse_docket_number(docket_number)
 
         driver = webdriver.Firefox(
@@ -455,10 +494,19 @@ class CommonPleas:
 
         # Wait for results
         try:
+            search_xpath = "//*[@id='{}'] | {}".format(
+                DocketSearch.SEARCH_RESULTS_TABLE,
+                DocketSearch.NO_RESULTS_FOUND
+            )
             search_results = WebDriverWait(driver, 15).until(
                 EC.presence_of_element_located(
-                    (By.ID, DocketSearch.SEARCH_RESULTS_TABLE))
+                    (By.XPATH, search_xpath))
             )
+
+            if "No Cases Found" in search_results.text:
+                driver.quit()
+                return {"status": "No Dockets Found"}
+
         # Collect results
             response = parse_docket_search_results(search_results)
             if len(response) != 1:
@@ -468,10 +516,11 @@ class CommonPleas:
                 current_app.logger.warning(
                     "I found {} dockets, instead of 1.".format(len(response)))
             response = response[0]
-        except AssertionError:
-            response = {"status": "no dockets found"}
-        finally:
+        except TimeoutException:
             driver.quit()
-            current_app.logger.info("Completed search for common pleas docket.")
-            return {"status": "success",
-                    "docket": response}
+            return {"status": "no dockets found"}
+
+        driver.quit()
+        current_app.logger.info("Completed search for common pleas docket.")
+        return {"status": "success",
+                "docket": response}
