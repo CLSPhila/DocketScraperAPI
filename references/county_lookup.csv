@@ -61,6 +61,7 @@ regex,county_code,County
 53[0-9]{3},53,Lawrence
 54[0-9]{3},54,Jefferson
 55[0-9]{3},55,Potter
+5730[0-4]{1},57,Bedford
 58[0-9]{3},58,Mifflin
 59[0-9]{3},59,Elk
 60[0-9]{3},60,Pike

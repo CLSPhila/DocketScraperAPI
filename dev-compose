@@ -6,6 +6,17 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8800:8800"
+    environment:
+      - GUNICORN_LOGGER=true
+    entrypoint:
+      - "gunicorn"
+      - "--config"
+      - "/app/gunicorn_config.py"
+      - "--log-level"
+      - "info"
+      - "-w"
+      - "6"
+      - "egscraper:app"
     volumes:
       - type: bind
         source: .
