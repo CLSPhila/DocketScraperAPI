@@ -1,0 +1,104 @@
+openapi: 3.0.0
+info:
+  description: "Simple api for searching for PA Court records"
+  version: "1.0.0"
+  title: "DocketScraper API"
+  license:
+    name: "MIT"
+paths:
+  /:
+    get:
+      responses:
+        200:
+          description: "Informs that the application is working"
+  /searchName/{court}:
+    summary: "Search MDJ or Common Pleas Court for records associated with a particular person"
+    post:
+      parameters: 
+        - in: path
+          name: court
+          required: true
+          schema:
+            type: string
+            enum: [MDJ, CP]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: 
+              type: object
+              properties:
+                first_name:
+                  type: string
+                last_name:
+                  type: string
+                dob:
+                  type: string
+                  pattern: '^[0-9]{2}\[0-9]{2}/[0-9]{4}$'
+                  description: date, in m/d/y format
+              example: 
+                first_name: "John"
+                last_name: "Smith"
+                dob: "01/01/1990"
+      responses:
+        200:
+          description: "Results of a search for records related to a person"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  dockets:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Docket'
+  /lookupDocket/{court}:
+    summary: Search MDJ or Common Pleas Court for a specific docket number
+    post:
+      parameters:
+        - in: path
+          name: court
+          required: true
+          schema:
+            type: string
+            enum: [MDJ, CP]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                docket_number: 
+                  type: string
+              example:
+                docket_number: "CP-45-CR-0123456"
+      responses:
+        200:
+          description: Results of a search for a specific docket.
+          content:
+            application/json:
+              schema: 
+                type: object
+                properties:
+                  status:
+                    type: string
+                  docket:
+                    $ref: "#/components/schemas/Docket"
+components:
+  schemas:
+    Docket:
+      type: object
+      properties:
+        docket_number: 
+          type: string
+        docket_sheet_url:
+          type: string
+        summary_url:
+          type: string
+        caption:
+          type: string
+        otn:
+          type: string
