@@ -150,6 +150,7 @@ log_path = os.path.join(os.getcwd(), "logs", "geckodriver.log")  # TODO Remove
 options = Options()
 options.headless = True
 options.add_argument("--window-size=800,1400")
+options.log.level = "trace"
 
 
 # Helper functions #
@@ -457,7 +458,9 @@ class CommonPleas:
         current_app.logger.info(
             "Searching by docket number for common pleas docket")
         docket_dict = parse_docket_number(docket_number)
-
+        if docket_dict is None:
+            current_app.logger.info("Caught malformed docket number.")
+            return {"status": "Error. Malformed docket number."}
         driver = webdriver.Firefox(
             options=options,
             service_log_path=None

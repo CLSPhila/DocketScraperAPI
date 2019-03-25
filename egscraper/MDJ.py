@@ -150,6 +150,7 @@ class NameSearch:
 options = Options()
 options.headless = True
 options.add_argument("--window-size=800,1400")
+options.log.level = "trace"
 
 
 # Helper functions #
@@ -500,6 +501,9 @@ class MDJ:
             docket_number (str): Docket number like CP-45-CR-1234567-2019
         """
         docket_dict = parse_docket_number(docket_number)
+        if docket_dict is None:
+            current_app.logger.info("Caught malformed docket number.")
+            return {"status": "Error. Malformed docket number."}
         current_app.logger.info("searching by docket number for mdj dockets.")
         driver = webdriver.Firefox(
             options=options,
