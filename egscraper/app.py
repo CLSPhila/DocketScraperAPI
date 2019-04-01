@@ -7,7 +7,7 @@ import logging
 
 app = Flask(__name__)
 if os.getenv("GUNICORN_LOGGER"):
-    gunicorn_logger = logging.getLogger('gunicorn.error')
+    gunicorn_logger = logging.getLogger('gunicorn.info')
     app.logger.handlers = gunicorn_logger.handlers
     app.logger.setLevel(gunicorn_logger.level)
 

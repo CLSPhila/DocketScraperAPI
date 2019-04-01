@@ -339,9 +339,14 @@ def catch_webdriver_exception(func):
         try:
             return func(*args, **kwargs)
         except WebDriverException:
+            current_app.logger.error("Exception: Web driver error")
             return {"status": "Web Driver Error"}
         except TimeoutException:
+            current_app.logger.error("Exception: Timeout Error")
             return {"status": "Timeout. No dockets found."}
+        except:
+            current_app.logger.error("Exception: Unknown")
+            return {"status": "Unknown Error."}
     return wrapper
 
 
