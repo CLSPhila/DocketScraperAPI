@@ -2,7 +2,16 @@ from egscraper.CommonPleas import parse_docket_number as parse_cp_docket_number
 from egscraper.MDJ import (
     parse_docket_number as parse_mdj_docket_number,
     lookup_county)
+from egscraper.helpers import cp_or_mdj
 import pytest
+
+
+@pytest.mark.parametrize(
+    ("docket_number", "court"),
+    [("CP-25-CR-1234567-2019", "CP"),
+     ("MJ-09305-TR-0000010-2019", "MDJ")])
+def test_cp_or_mdj(docket_number, court):
+    assert cp_or_mdj(docket_number) == court
 
 
 def test_parse_cp_docket_number():

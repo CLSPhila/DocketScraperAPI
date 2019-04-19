@@ -1,6 +1,8 @@
 from flask import Flask, jsonify, request
 from .CommonPleas import CommonPleas
 from .MDJ import MDJ
+from .SearchBot import SearchBot
+from .helpers import cp_or_mdj
 import os
 import logging
 
@@ -46,13 +48,26 @@ def lookupDocket(court):
         return jsonify(
             {"status": "Error: Missing required parameter."}
         )
-    if court == "CP":
-        return jsonify(CommonPleas.lookupDocket(docket_number))
-    elif court == "MDJ":
-        return jsonify(MDJ.lookupDocket(docket_number))
+    searchbot = SearchBot()
+    if court in ["CP", "MDJ"]:
+        return jsonify(searchbot.lookup_docket(docket_number, court))
     else:
         return jsonify(
             {"status": "Error: {} court not recognized".format(court)})
+
+
+@app.route("/lookupMultipleDockets", methods=["POST"])
+def lookupMany():
+    """ Route for looking up many docket numbers."""
+    try:
+        docket_numbers = request.json["docket_numbers"]
+    except KeyError:
+        return jsonify(
+            {"status": "Error. Missing docket_numbers parameter."}
+        )
+    searchbot = SearchBot()
+    results = searchbot.lookup_multiple_dockets(docket_numbers)
+    return jsonify({"status": "success", "dockets": results})
 
 
 @app.route("/<path:path>", methods=["GET", "POST"])

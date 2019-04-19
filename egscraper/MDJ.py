@@ -150,7 +150,7 @@ class NameSearch:
 options = Options()
 options.headless = True
 options.add_argument("--window-size=800,1400")
-options.log.level = "trace"
+options.log.level = "error"
 
 
 # Helper functions #
@@ -495,7 +495,7 @@ class MDJ:
 
     @staticmethod
     @catch_webdriver_exception
-    def lookupDocket(docket_number):
+    def lookupDocket(docket_number, driver):
         """
         Lookup information about a single docket in the MDJ courts
 
@@ -510,10 +510,6 @@ class MDJ:
             current_app.logger.info("Caught malformed docket number.")
             return {"status": "Error. Malformed docket number."}
         current_app.logger.info("searching by docket number for mdj dockets.")
-        driver = webdriver.Firefox(
-            options=options,
-            service_log_path=None
-        )
         driver.get(MDJ_URL)
         search_type_select = Select(
             driver.find_element_by_name(SEARCH_TYPE_SELECT))
@@ -566,21 +562,38 @@ class MDJ:
             )
 
         except AssertionError:
-            driver.quit()
+            # driver.quit()
             return {"status": "Error: Could not find search results."}
 
         if "No Records Found" in search_results.text:
-            driver.quit()
+            # driver.quit()
             return {"status": "No Dockets Found"}
 
         try:
             final_results = parse_docket_search_results(search_results)
             assert len(final_results) == 1
         except AssertionError:
-            driver.quit()
+            # driver.quit()
             return {"status": "Error: could not parse search results."}
 
-        driver.quit()
+        # driver.quit()
         current_app.logger.info(
             "Completed searching by docket number for mdj dockets.")
         return {"status": "success", "docket": final_results[0]}
+
+    @staticmethod
+    @catch_webdriver_exception
+    def lookupMultipleDockets(docket_nums, driver):
+        """ Lookup multiple dockets
+
+        Args:
+            docket_nums (str[]): list of docket numbers as strings """
+
+        if len(docket_nums) == 0:
+            return []
+        results = []
+        for docket_num in docket_nums:
+            docket_lookup = MDJ.lookupDocket(docket_num, driver=driver)
+            if docket_lookup["status"] == "success":
+                results.append(docket_lookup["docket"])
+        return results

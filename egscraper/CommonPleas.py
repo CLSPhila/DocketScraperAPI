@@ -150,7 +150,7 @@ log_path = os.path.join(os.getcwd(), "logs", "geckodriver.log")  # TODO Remove
 options = Options()
 options.headless = True
 options.add_argument("--window-size=800,1400")
-options.log.level = "trace"
+options.log.level = "error"
 
 
 # Helper functions #
@@ -445,7 +445,7 @@ class CommonPleas:
 
     @staticmethod
     @catch_webdriver_exception
-    def lookupDocket(docket_number):
+    def lookupDocket(docket_number, driver):
         """
         Lookup information about a single docket
 
@@ -461,10 +461,6 @@ class CommonPleas:
         if docket_dict is None:
             current_app.logger.info("Caught malformed docket number.")
             return {"status": "Error. Malformed docket number."}
-        driver = webdriver.Firefox(
-            options=options,
-            service_log_path=None
-        )
         driver.get(COMMON_PLEAS_URL)
         search_type_select = Select(
             driver.find_element_by_name(SEARCH_TYPE_SELECT))
@@ -507,7 +503,7 @@ class CommonPleas:
             )
 
             if "No Cases Found" in search_results.text:
-                driver.quit()
+                # driver.quit()
                 return {"status": "No Dockets Found"}
 
         # Collect results
@@ -520,10 +516,27 @@ class CommonPleas:
                     "I found {} dockets, instead of 1.".format(len(response)))
             response = response[0]
         except TimeoutException:
-            driver.quit()
+            # driver.quit()
             return {"status": "no dockets found"}
 
-        driver.quit()
+        # driver.quit()
         current_app.logger.info("Completed search for common pleas docket.")
         return {"status": "success",
                 "docket": response}
+
+    @staticmethod
+    @catch_webdriver_exception
+    def lookupMultipleDockets(docket_nums, driver):
+        """ Lookup multiple dockets
+
+        Args:
+            docket_nums (str[]): list of docket numbers as strings """
+
+        if len(docket_nums) == 0:
+            return []
+        results = []
+        for docket_num in docket_nums:
+            docket_lookup = CommonPleas.lookupDocket(docket_num, driver=driver)
+            if docket_lookup["status"] == "success":
+                results.append(docket_lookup["docket"])
+        return results
