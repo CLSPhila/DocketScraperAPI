@@ -145,15 +145,8 @@ class NameSearch:
     # value
     DATE_FILED_FROM = "01/01/1950"
 
-
-# Defaults for the webdriver #
-options = Options()
-options.headless = True
-options.add_argument("--window-size=800,1400")
-options.log.level = "error"
-
-
 # Helper functions #
+
 
 def parse_docket_number(docket_str):
     """ Parse a string representation of a MDJ docket number into
@@ -263,16 +256,6 @@ def parse_docket_search_results(search_results):
         ".//td[12]"
     )
 
-    # Can't just grab these urls because some cases don't
-    # have a summary, which will throw off the lengths of arrays being zipped
-    # Also, if a case doesn't have a summary, there's no sublink for the Docket
-    # sheet.
-
-    # docket_sheet_urls = search_results.find_elements_by_xpath(
-    #     "//td/a[contains(text(), 'Docket Sheet')]")
-    # summary_urls = search_results.find_elements_by_xpath(
-    #     "//td/a[contains(text(), 'Court Summary')]")
-
     docket_sheet_urls = []
     for docket in docket_numbers:
         try:
@@ -332,31 +315,13 @@ def parse_docket_search_results(search_results):
     return dockets
 
 
-def catch_webdriver_exception(func):
-    """ Decorator that catches webdriver errors.
-    """
-    def wrapper(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except WebDriverException:
-            current_app.logger.error("Exception: Web driver error")
-            return {"status": "Web Driver Error"}
-        except TimeoutException:
-            current_app.logger.error("Exception: Timeout Error")
-            return {"status": "Timeout. No dockets found."}
-        except:
-            current_app.logger.error("Exception: Unknown")
-            return {"status": "Unknown Error."}
-    return wrapper
-
-
 class MDJ:
     """ Class for searching for dockets in Majesterial District courts
     """
 
     @staticmethod
-    @catch_webdriver_exception
-    def searchName(first_name, last_name, dob=None, date_format="%m/%d/%Y"):
+    def searchName(
+            first_name, last_name, driver, dob=None, date_format="%m/%d/%Y"):
         """
         Search the MDJ site for criminal records of a person
 
@@ -374,11 +339,6 @@ class MDJ:
             except ValueError:
                 current_app.logger.error("Unable to parse date")
                 return {"status": "Error: check your date format"}
-
-        driver = webdriver.Firefox(
-            options=options,
-            service_log_path=None
-        )
         driver.get(MDJ_URL)
 
         # Select the Name search
@@ -395,7 +355,6 @@ class MDJ:
             )
         except AssertionError:
             current_app.logger.error("Name Seaerch Fields not found.")
-            driver.quit()
             return {"status": "Error: Name search fields not found"}
 
         last_name_input.clear()
@@ -450,11 +409,9 @@ class MDJ:
                     (By.XPATH, search_xpath))
             )
         except AssertionError:
-            driver.quit()
             return {"status": "Error: Could not find search results."}
 
         if "No Records Found" in search_results.text:
-            driver.quit()
             return {"status": "No Dockets Found"}
 
         final_results = parse_docket_search_results(search_results)
@@ -487,14 +444,12 @@ class MDJ:
 
             final_results.extend(parse_docket_search_results(search_results))
 
-        driver.quit()
         current_app.logger.info("Completed searching by name for MDJ Dockets")
         current_app.logger.info("found {} dockets".format(len(final_results)))
         return {"status": "success",
                 "dockets": final_results}
 
     @staticmethod
-    @catch_webdriver_exception
     def lookupDocket(docket_number, driver):
         """
         Lookup information about a single docket in the MDJ courts
@@ -562,27 +517,22 @@ class MDJ:
             )
 
         except AssertionError:
-            # driver.quit()
             return {"status": "Error: Could not find search results."}
 
         if "No Records Found" in search_results.text:
-            # driver.quit()
             return {"status": "No Dockets Found"}
 
         try:
             final_results = parse_docket_search_results(search_results)
             assert len(final_results) == 1
         except AssertionError:
-            # driver.quit()
             return {"status": "Error: could not parse search results."}
 
-        # driver.quit()
         current_app.logger.info(
             "Completed searching by docket number for mdj dockets.")
         return {"status": "success", "docket": final_results[0]}
 
     @staticmethod
-    @catch_webdriver_exception
     def lookupMultipleDockets(docket_nums, driver):
         """ Lookup multiple dockets
 

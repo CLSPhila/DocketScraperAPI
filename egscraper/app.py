@@ -1,8 +1,5 @@
 from flask import Flask, jsonify, request
-from .CommonPleas import CommonPleas
-from .MDJ import MDJ
 from .SearchBot import SearchBot
-from .helpers import cp_or_mdj
 import os
 import logging
 
@@ -20,6 +17,7 @@ def index():
     return jsonify({"status": "all good"})
 
 
+@app.route("/searchName", methods=["POST"], defaults={'court': None})
 @app.route("/searchName/<court>", methods=["POST"])
 def searchName(court):
     try:
@@ -31,13 +29,19 @@ def searchName(court):
             {"status": "Error: Missing required parameter."}
         )
     dob = request.json.get("dob")
+    searchbot = SearchBot()
     if court == "CP":
-        return jsonify(CommonPleas.searchName(first_name, last_name, dob))
+        return jsonify(
+            searchbot.search_name(first_name, last_name, dob, court="CP"))
     elif court == "MDJ":
-        return jsonify(MDJ.searchName(first_name, last_name, dob))
-    else:
+        return jsonify(
+            searchbot.search_name(first_name, last_name, dob, court="MDJ"))
+    elif court is not None:
         return jsonify(
             {"status": "Error: {} court not recognized".format(court)})
+    else:
+        return jsonify(
+            searchbot.search_name(first_name, last_name, dob, court="both"))
 
 
 @app.route("/lookupDocket/<court>", methods=["POST"])
