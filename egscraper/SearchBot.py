@@ -11,7 +11,7 @@ from flask import current_app
 # Defaults for the webdriver #
 log_path = os.path.join(os.getcwd(), "logs", "geckodriver.log")  # TODO Remove
 options = Options()
-options.headless = False
+options.headless = True 
 options.add_argument("--window-size=800,1400")
 options.log.level = "error"
 
