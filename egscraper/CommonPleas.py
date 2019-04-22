@@ -1,4 +1,3 @@
-from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.support.ui import Select, WebDriverWait
 from selenium.webdriver.common.keys import Keys
@@ -67,7 +66,6 @@ class DocketSearch:
     )
 
 
-# TODO These are inconsistently Names or IDs.
 class NameSearch:
     """Selectors for searching for a single Docket"""
 
@@ -145,12 +143,6 @@ class SEARCH_TYPES:
     participant_name = "Participant Name"
 
 
-# Defaults for the webdriver #
-log_path = os.path.join(os.getcwd(), "logs", "geckodriver.log")  # TODO Remove
-options = Options()
-options.headless = True
-options.add_argument("--window-size=800,1400")
-options.log.level = "trace"
 
 
 # Helper functions #
@@ -289,24 +281,11 @@ def get_next_button(driver):
         "//a[contains(@href, 'casePager') and contains(text(), 'Next')]")
 
 
-def catch_webdriver_exception(func):
-    """ Decorator that catches webdriver errors.
-    """
-    def wrapper(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except WebDriverException:
-            return {"status": "Web Driver Error"}
-        except TimeoutException:
-            return {"status": "Timeout. No dockets found."}
-    return wrapper
-
-
 class CommonPleas:
 
     @staticmethod
-    @catch_webdriver_exception
-    def searchName(first_name, last_name, dob=None, date_format="%m/%d/%Y"):
+    def searchName(
+            first_name, last_name, driver, dob=None, date_format="%m/%d/%Y"):
         """
         Search the Common Pleas site for criminal records of a person
 
@@ -325,9 +304,6 @@ class CommonPleas:
                 return {"status": "Error: check your date format"}
 
         current_app.logger.info("Searching by Name for Common Pleas dockets")
-        driver = webdriver.Firefox(
-            options=options,
-            service_log_path=None)
         driver.get(COMMON_PLEAS_URL)
 
         # Choose to search by Name
@@ -344,7 +320,6 @@ class CommonPleas:
             )
         except AssertionError:
             current_app.logger.error("Name Search Fields not found.")
-            driver.quit()
             return {"status": "Error: Name search fields not found"}
 
         # Fill in name fields
@@ -399,11 +374,9 @@ class CommonPleas:
                     )
             )
         except TimeoutException:
-            driver.quit()
             return {"status": "Error: Could not find search results."}
 
         if "No Cases Found" in search_results.text:
-            driver.quit()
             return {"status": "No Dockets Found"}
         final_results = parse_docket_search_results(search_results)
         while next_button_enabled(driver) and dob:
@@ -435,7 +408,6 @@ class CommonPleas:
             )
             final_results.extend(parse_docket_search_results(search_results))
 
-        driver.quit()
         current_app.logger.info(
             "Completed Name Search for Common Pleas Dockets.")
         current_app.logger.info("Found {} dockets.".format(len(final_results)))
@@ -444,8 +416,7 @@ class CommonPleas:
                 "dockets": final_results}
 
     @staticmethod
-    @catch_webdriver_exception
-    def lookupDocket(docket_number):
+    def lookupDocket(docket_number, driver):
         """
         Lookup information about a single docket
 
@@ -461,10 +432,6 @@ class CommonPleas:
         if docket_dict is None:
             current_app.logger.info("Caught malformed docket number.")
             return {"status": "Error. Malformed docket number."}
-        driver = webdriver.Firefox(
-            options=options,
-            service_log_path=None
-        )
         driver.get(COMMON_PLEAS_URL)
         search_type_select = Select(
             driver.find_element_by_name(SEARCH_TYPE_SELECT))
@@ -507,7 +474,6 @@ class CommonPleas:
             )
 
             if "No Cases Found" in search_results.text:
-                driver.quit()
                 return {"status": "No Dockets Found"}
 
         # Collect results
@@ -520,10 +486,24 @@ class CommonPleas:
                     "I found {} dockets, instead of 1.".format(len(response)))
             response = response[0]
         except TimeoutException:
-            driver.quit()
             return {"status": "no dockets found"}
 
-        driver.quit()
         current_app.logger.info("Completed search for common pleas docket.")
         return {"status": "success",
                 "docket": response}
+
+    @staticmethod
+    def lookupMultipleDockets(docket_nums, driver):
+        """ Lookup multiple dockets
+
+        Args:
+            docket_nums (str[]): list of docket numbers as strings """
+
+        if len(docket_nums) == 0:
+            return []
+        results = []
+        for docket_num in docket_nums:
+            docket_lookup = CommonPleas.lookupDocket(docket_num, driver=driver)
+            if docket_lookup["status"] == "success":
+                results.append(docket_lookup["docket"])
+        return results

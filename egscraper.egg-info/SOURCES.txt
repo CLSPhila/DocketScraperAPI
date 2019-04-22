@@ -2,8 +2,10 @@ README.md
 setup.py
 egscraper/CommonPleas.py
 egscraper/MDJ.py
+egscraper/SearchBot.py
 egscraper/__init__.py
 egscraper/app.py
+egscraper/helpers.py
 egscraper.egg-info/PKG-INFO
 egscraper.egg-info/SOURCES.txt
 egscraper.egg-info/dependency_links.txt

@@ -1,6 +1,5 @@
 from flask import Flask, jsonify, request
-from .CommonPleas import CommonPleas
-from .MDJ import MDJ
+from .SearchBot import SearchBot
 import os
 import logging
 
@@ -18,6 +17,7 @@ def index():
     return jsonify({"status": "all good"})
 
 
+@app.route("/searchName", methods=["POST"], defaults={'court': None})
 @app.route("/searchName/<court>", methods=["POST"])
 def searchName(court):
     try:
@@ -29,13 +29,19 @@ def searchName(court):
             {"status": "Error: Missing required parameter."}
         )
     dob = request.json.get("dob")
+    searchbot = SearchBot()
     if court == "CP":
-        return jsonify(CommonPleas.searchName(first_name, last_name, dob))
+        return jsonify(
+            searchbot.search_name(first_name, last_name, dob, court="CP"))
     elif court == "MDJ":
-        return jsonify(MDJ.searchName(first_name, last_name, dob))
-    else:
+        return jsonify(
+            searchbot.search_name(first_name, last_name, dob, court="MDJ"))
+    elif court is not None:
         return jsonify(
             {"status": "Error: {} court not recognized".format(court)})
+    else:
+        return jsonify(
+            searchbot.search_name(first_name, last_name, dob, court="both"))
 
 
 @app.route("/lookupDocket/<court>", methods=["POST"])
@@ -46,13 +52,26 @@ def lookupDocket(court):
         return jsonify(
             {"status": "Error: Missing required parameter."}
         )
-    if court == "CP":
-        return jsonify(CommonPleas.lookupDocket(docket_number))
-    elif court == "MDJ":
-        return jsonify(MDJ.lookupDocket(docket_number))
+    searchbot = SearchBot()
+    if court in ["CP", "MDJ"]:
+        return jsonify(searchbot.lookup_docket(docket_number, court))
     else:
         return jsonify(
             {"status": "Error: {} court not recognized".format(court)})
+
+
+@app.route("/lookupMultipleDockets", methods=["POST"])
+def lookupMany():
+    """ Route for looking up many docket numbers."""
+    try:
+        docket_numbers = request.json["docket_numbers"]
+    except KeyError:
+        return jsonify(
+            {"status": "Error. Missing docket_numbers parameter."}
+        )
+    searchbot = SearchBot()
+    results = searchbot.lookup_multiple_dockets(docket_numbers)
+    return jsonify({"status": "success", "dockets": results})
 
 
 @app.route("/<path:path>", methods=["GET", "POST"])

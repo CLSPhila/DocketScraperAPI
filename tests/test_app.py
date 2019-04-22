@@ -261,3 +261,27 @@ def test_mdj_multiple_pages(client):
         "last_name": "Kane",
     })
     assert len(resp.get_json()["dockets"]) == 10
+
+
+def test_mdj_and_cp_search(client):
+    resp = client.post("searchName", json={
+        "first_name": "Kathleen",
+        "last_name": "Kane",
+        "dob": "06/14/1966"
+    })
+    assert resp.get_json()["status"] == "success"
+    assert len(resp.get_json()["dockets"]) == 5
+
+
+def test_lookup_multiple_dockets(client):
+    docket_numbers = [
+        "MJ-36303-CR-0000010-2019", "MJ-25302-NT-0000010-2019",
+        "CP-25-CR-0000007-2019"]
+    resp = client.post("lookupMultipleDockets", json={
+        "docket_numbers": docket_numbers
+    })
+    assert resp.get_json()["status"] == "success"
+    assert all(
+        ["docket_sheet_url" in docket.keys()
+            for docket in resp.get_json()["dockets"]])
+    assert len(resp.get_json()["dockets"]) == len(docket_numbers)

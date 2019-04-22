@@ -105,6 +105,9 @@ ab -p post_data.txt -T application/json -n 3 -c 3  http://localhost:8800
 
 ## Building for Production
 
+Note that is Github integration is set up, Dockerhub will automatically build
+the image based on the master branch, and tag it with `:latest`.
+
 Build the container
 
 `sudo docker build -t egscraper:v0.0.1 .`
