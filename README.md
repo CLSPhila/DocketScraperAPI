@@ -1,5 +1,9 @@
 # EG Scraper
 
+## DEPRECATED. 
+
+See https://github.com/CLSPhila/django-docketsearch for a replacement.
+
 A simple REST API for using a headless browser to collect docket information from the Pennsylvania Courts.
 
 ## Using the API, if you've got it running already
