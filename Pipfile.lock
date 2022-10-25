@@ -139,10 +139,8 @@
             "version": "==1.9.0"
         },
         "py-cpuinfo": {
-            "hashes": [
-                "sha256:9aa2e49675114959697d25cf57fec41c29b55887bff3bc4809b44ac6f5730097"
-            ],
-            "version": "==7.0.0"
+            "hashes": [],
+            "version": "==9.0.0"
         },
         "pyparsing": {
             "hashes": [
