@@ -96,11 +96,8 @@
     },
     "develop": {
         "attrs": {
-            "hashes": [
-                "sha256:26b54ddbbb9ee1d34d5d3668dd37d6cf74990ab23c828c2888dccdceee395594",
-                "sha256:fce7fc47dfc976152e82d53ff92fa0407700c21acd20886a13777a0d20e655dc"
-            ],
-            "version": "==20.2.0"
+            "hashes": [],
+            "version": "==23.1.0"
         },
         "importlib-metadata": {
             "hashes": [
